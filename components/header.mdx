@@ -1,0 +1,257 @@
+---
+title: 'Header Navigation'
+description: 'Responsive navigation header with scroll effects and mobile menu'
+icon: 'bars'
+---
+
+## Overview
+
+The `Header` component provides the main navigation for the Polaris Clima website. It features a sticky header with glassmorphism effects, scroll-based transformations, and a responsive mobile menu.
+
+**Source**: `~/workspace/source/components/Header.tsx`
+
+## Features
+
+- **Sticky Navigation**: Fixed positioning that follows the user as they scroll
+- **Scroll Effects**: Transforms from full-width to rounded pill shape when scrolled
+- **Glassmorphism**: Backdrop blur with semi-transparent background
+- **Mobile Menu**: Hamburger menu for small screens with slide-in drawer
+- **Smart Logo Behavior**: Scrolls to top on home page, navigates on other pages
+- **Anchor Link Handling**: Smooth scroll to sections on home page
+
+## Visual States
+
+### Initial State (Top of Page)
+
+```css
+Background: bg-white/60 (60% opacity white)
+Position: Full width, top-0 left-0 right-0
+Border: Rounded none
+Padding: py-2 px-4 (mobile) to py-4 px-12 (desktop)
+```
+
+### Scrolled State (After 80px)
+
+```css
+Background: bg-white/75 (75% opacity white)
+Position: Inset with margins (left-6 right-6 to left-24 right-24)
+Border: rounded-2xl
+Padding: py-1 px-4 (mobile) to py-2 px-6 (desktop)
+Shadow: Enhanced shadow for depth
+```
+
+## Navigation Links
+
+The header provides navigation to the following sections (via anchor links on home page):
+
+| Link | Target | Description |
+|------|--------|-------------|
+| Inicio | `/#` | Scrolls to top of home page |
+| Soluciones | `/#soluciones` | Product categories section |
+| Servicios | `/#servicios` | Service offerings section |
+| Nosotros | `/#nosotros` | Why choose us section |
+| Marcas | `/#marcas` | Brands carousel section |
+| Contáctanos | `/contacto` | Full contact page route |
+
+## Implementation
+
+### Basic Usage
+
+```tsx
+import Header from '@/components/Header';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <Header />
+        <main>{children}</main>
+        <Footer />
+      </body>
+    </html>
+  );
+}
+```
+
+### Scroll Detection
+
+The component uses a scroll event listener to detect when the user has scrolled past 80px:
+
+```tsx
+const [isScrolled, setIsScrolled] = useState(false);
+
+useEffect(() => {
+  const onScroll = () => {
+    setIsScrolled(window.scrollY > 80);
+  };
+
+  window.addEventListener('scroll', onScroll);
+  return () => window.removeEventListener('scroll', onScroll);
+}, []);
+```
+
+### Smart Logo Click Handler
+
+The logo behavior changes based on the current route:
+
+```tsx
+const handleLogoClick = (e: React.MouseEvent) => {
+  e.preventDefault();
+
+  if (pathname === '/') {
+    // On home page: scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Clear any hash in URL
+    if (window.location.hash) {
+      window.history.replaceState(null, '', '/');
+    }
+  } else {
+    // On other pages: navigate to home
+    window.location.assign('/');
+  }
+};
+```
+
+### Anchor Link Navigation
+
+For section links on the home page, the component implements smooth scrolling:
+
+```tsx
+const handleNavClick = (e: React.MouseEvent, href: string) => {
+  e.preventDefault();
+
+  // If not on home page, perform full navigation
+  if (pathname !== '/') {
+    window.location.assign(href);
+    return;
+  }
+
+  // If on home page, smooth scroll to section
+  const id = href.replace('/#', '');
+  const section = document.getElementById(id);
+
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth' });
+    window.history.replaceState(null, '', href);
+  }
+};
+```
+
+## Responsive Design
+
+### Desktop Navigation (≥768px)
+
+- Full horizontal navigation menu
+- Logo on left, nav links in center, contact button on right
+- Larger logo size (48px height)
+- Wider padding and margins
+
+### Mobile Navigation (&lt;768px)
+
+- Hamburger menu icon (☰)
+- Smaller logo (32px height)
+- Full-screen slide-in drawer menu
+- Stacked vertical navigation links
+
+### Mobile Menu Structure
+
+```tsx
+<div className={`
+  fixed inset-0 z-40 bg-white
+  transform transition-transform duration-300
+  ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}
+`}>
+  <div className="flex flex-col items-center pt-24 gap-6">
+    <Link href="/#" onClick={handleNavClick}>Inicio</Link>
+    <Link href="/#soluciones" onClick={handleNavClick}>Soluciones</Link>
+    {/* ... more links */}
+  </div>
+</div>
+```
+
+## Styling Details
+
+### Glassmorphism Effect
+
+The header uses backdrop blur and semi-transparent backgrounds for a modern glass effect:
+
+```css
+.backdrop-blur-lg {
+  backdrop-filter: blur(16px);
+}
+
+.bg-white/75 {
+  background-color: rgb(255 255 255 / 0.75);
+}
+
+.border-white/30 {
+  border-color: rgb(255 255 255 / 0.3);
+}
+```
+
+### Transform Animation
+
+The scroll-triggered transformation uses smooth CSS transitions:
+
+```css
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+.ease-in-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+```
+
+## Accessibility
+
+- **Semantic HTML**: Uses `<header>` and `<nav>` tags
+- **Focus Management**: Mobile menu button has clear focus states
+- **Keyboard Navigation**: All links are keyboard accessible
+- **Screen Readers**: Logo image has descriptive `alt` text
+- **Mobile Menu**: Proper ARIA attributes for hamburger button
+
+## Performance Considerations
+
+<Warning>
+The component uses `window.location.assign()` for non-home page navigation instead of Next.js `<Link>` for static export compatibility. This causes full page reloads when navigating between pages.
+</Warning>
+
+**Optimization notes:**
+- Scroll listener is properly cleaned up to prevent memory leaks
+- Logo is a standard `<img>` tag (not Next.js Image) for immediate rendering
+- Transitions are GPU-accelerated via transform properties
+
+## Integration with Layout
+
+The Header is typically included in the root layout to appear on all pages:
+
+```tsx title="app/layout.tsx"
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="es">
+      <body>
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </body>
+    </html>
+  );
+}
+```
+
+## Related Components
+
+- [Footer](/components/footer) - Complementary navigation at bottom of pages
+- [Hero Section](/components/hero-section) - First section below header on home page
+- [WhatsApp Button](/components/whatsapp-button) - Floating action button for contact

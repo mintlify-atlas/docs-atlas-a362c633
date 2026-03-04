@@ -46,7 +46,9 @@
           {
             "group": "Components",
             "pages": [
+              "components/header",
               "components/hero-section",
+              "components/brands-carousel",
               "components/service-cards",
               "components/contact-form",
               "components/testimonials",

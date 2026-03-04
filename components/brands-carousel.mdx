@@ -1,0 +1,219 @@
+---
+title: 'Brands Carousel'
+description: 'Animated carousel displaying supported HVAC brands'
+icon: 'images'
+---
+
+## Overview
+
+The `BrandsCarousel` component displays a continuously scrolling marquee of HVAC brand logos that Polaris Clima services and installs. It creates visual credibility by showcasing partnerships with major manufacturers.
+
+**Source**: `~/workspace/source/components/BrandsCarousel.tsx`
+
+## Features
+
+- **Infinite Scroll Animation**: CSS-powered marquee animation with seamless looping
+- **13 Supported Brands**: Displays logos from major HVAC manufacturers
+- **Hover Interactions**: Logo scaling on hover for interactivity
+- **Responsive Sizing**: Adaptive logo sizes for mobile and desktop
+- **Textured Background**: Uses brick texture background with white overlay
+
+## Supported Brands
+
+The component displays logos for the following HVAC manufacturers:
+
+<CardGroup cols={3}>
+  <Card title="Airolite" icon="building">
+    Chilean HVAC brand
+  </Card>
+  <Card title="Anwo" icon="building">
+    Commercial systems
+  </Card>
+  <Card title="Clark" icon="building">
+    Split systems
+  </Card>
+  <Card title="Daikin" icon="building">
+    Japanese manufacturer
+  </Card>
+  <Card title="Hisense" icon="building">
+    Consumer electronics
+  </Card>
+  <Card title="Kone" icon="building">
+    Industrial HVAC
+  </Card>
+  <Card title="LG" icon="building">
+    Multi-split systems
+  </Card>
+  <Card title="Midea" icon="building">
+    Air conditioning
+  </Card>
+  <Card title="Samsung" icon="building">
+    Smart HVAC systems
+  </Card>
+  <Card title="Splendid" icon="building">
+    Italian manufacturer
+  </Card>
+  <Card title="TCL" icon="building">
+    Residential systems
+  </Card>
+  <Card title="Trane" icon="building">
+    Commercial HVAC
+  </Card>
+  <Card title="York" icon="building">
+    Industrial cooling
+  </Card>
+</CardGroup>
+
+## Usage
+
+```tsx
+import BrandsCarousel from '@/components/BrandsCarousel';
+
+export default function HomePage() {
+  return (
+    <>
+      <HeroSection />
+      <BrandsCarousel />
+      {/* Other sections */}
+    </>
+  );
+}
+```
+
+## Implementation Details
+
+### Brand Configuration
+
+Each brand is configured with a logo path and scale factor for visual consistency:
+
+```tsx
+const brands = [
+  { name: 'Airolite', logo: '/brands/Airolite.png', scale: 1.3 },
+  { name: 'Daikin', logo: '/brands/Daikin.png', scale: 1.5 },
+  { name: 'Samsung', logo: '/brands/Samsung.png', scale: 1.5 },
+  // ... 10 more brands
+];
+```
+
+### Animation System
+
+The carousel uses CSS animations for infinite scrolling:
+
+```css
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+```
+
+**Performance Note**: The brand array is duplicated to create the seamless loop effect. The animation moves the entire strip, and when the first half passes, the second half (identical) takes its place.
+
+### Responsive Behavior
+
+| Breakpoint | Logo Width | Logo Height | Container Height |
+|------------|------------|-------------|------------------|
+| Mobile     | 80px       | 48px        | 64px             |
+| Desktop    | 128px      | 80px        | 112px            |
+
+### Styling Structure
+
+```tsx
+<section className="py-2 sm:py-4 border-y border-gray-200 overflow-hidden bg-[#e9e9e9] shadow-[0_-20px_40px_rgba(0,0,0,0.3)] rounded-t-3xl -mt-4 sm:-mt-6 lg:-mt-8">
+  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px]" />
+  
+  <div className="flex w-max animate-marquee">
+    {[...brands, ...brands].map((brand, index) => (
+      <div className="flex-shrink-0 w-[120px] h-16 sm:w-[180px] sm:h-28 hover:scale-110">
+        <Image src={brand.logo} alt={`${brand.name} logo`} />
+      </div>
+    ))}
+  </div>
+</section>
+```
+
+## Visual Design
+
+### Background Effect
+
+The component uses a layered background approach:
+1. **Base**: Brick texture image (`/ladrillos-blancos.png`)
+2. **Overlay**: 80% white overlay with 1px backdrop blur
+3. **Shadow**: Top shadow for depth effect
+
+This creates a subtle textured appearance while maintaining legibility.
+
+### Hover States
+
+```css
+.hover:scale-110 {
+  transition: transform 300ms ease;
+}
+```
+
+Individual logos scale 10% on hover, providing interactive feedback without disrupting the animation flow.
+
+## Integration Points
+
+The BrandsCarousel is typically placed directly after the HeroSection on the home page:
+
+```tsx title="app/page.tsx"
+export default function Home() {
+  return (
+    <>
+      <HeroSection />
+      <BrandsCarousel />      {/* ← Shows brand credibility */}
+      <ServicesSection />
+      <WhyChooseUsSection />
+      {/* ... */}
+    </>
+  );
+}
+```
+
+## Asset Requirements
+
+### Logo Files
+
+All brand logos must be stored in `/public/brands/` directory with the following specs:
+
+- **Format**: PNG with transparency
+- **Background**: Transparent
+- **Dimensions**: Variable (will be scaled via `scale` property)
+- **Naming**: `{BrandName}.png` (e.g., `Daikin.png`)
+
+### Background Image
+
+The brick texture is stored at `/public/ladrillos-blancos.png`:
+- Format: PNG
+- Usage: Background pattern
+- Size: Tileable/repeatable pattern
+
+## Accessibility
+
+- Each logo has descriptive `alt` text: `"{Brand Name} logo"`
+- Section has semantic `<section>` tag
+- Animation respects `prefers-reduced-motion` media query (motion disabled for users who prefer reduced motion)
+
+## Performance Considerations
+
+<Tip>
+The carousel duplicates the brand array to enable seamless looping. This requires loading 26 images (13 brands × 2) but ensures smooth infinite scrolling without JavaScript.
+</Tip>
+
+**Optimization strategies:**
+- Use Next.js `Image` component for automatic optimization
+- Logos are lazy-loaded below the fold
+- CSS animations are GPU-accelerated (no JavaScript required)
+
+## Related Components
+
+- [Hero Section](/components/hero-section) - Component displayed directly above
+- [Services Section](/features/services) - Natural next section after brand credibility
