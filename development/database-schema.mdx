@@ -1,0 +1,367 @@
+---
+title: 'Database Schema'
+description: 'MySQL database schema and configuration for Polaris Clima'
+---
+
+## Overview
+
+Polaris Clima uses MySQL 8.0+ to store contact form submissions. The database schema is designed to be simple and efficient, with built-in data validation and rate limiting at the application layer.
+
+## Database Connection
+
+### Connection Setup
+
+The application uses the `mysql2/promise` library to establish database connections. The connection helper is defined in `lib/db.ts`:
+
+```typescript title="lib/db.ts"
+import mysql from 'mysql2/promise';
+
+export async function getConnection() {
+  return await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+  });
+}
+```
+
+<Note>
+The `getConnection()` function creates a new connection each time it's called. Make sure to close connections after use to prevent connection leaks.
+</Note>
+
+### Connection Pattern
+
+The recommended pattern for using database connections is shown in `app/api/contacto/route.ts:91-107`:
+
+```typescript
+let connection;
+
+try {
+  connection = await getConnection();
+  
+  await connection.execute(
+    `INSERT INTO contactos (nombre, apellido, correo, telefono, mensaje, origen)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [nombre, apellido, email, telefono, mensaje, origen]
+  );
+  
+  return NextResponse.json({ success: true });
+  
+} catch (error) {
+  console.error('Error DB:', error);
+  return NextResponse.json({ error: 'Error al guardar' }, { status: 500 });
+  
+} finally {
+  if (connection) await connection.end();
+}
+```
+
+<Warning>
+Always close database connections in a `finally` block to ensure they're released even if an error occurs.
+</Warning>
+
+## Schema Definition
+
+### `contactos` Table
+
+The `contactos` table stores contact form submissions from the website.
+
+#### Table Structure
+
+```sql
+CREATE TABLE contactos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  apellido VARCHAR(100) NOT NULL,
+  correo VARCHAR(150) NOT NULL,
+  telefono VARCHAR(20) NOT NULL,
+  mensaje TEXT,
+  origen VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Column Definitions
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `INT` | `AUTO_INCREMENT`, `PRIMARY KEY` | Unique identifier for each contact submission |
+| `nombre` | `VARCHAR(100)` | `NOT NULL` | First name of the contact (max 100 characters) |
+| `apellido` | `VARCHAR(100)` | `NOT NULL` | Last name of the contact (max 100 characters) |
+| `correo` | `VARCHAR(150)` | `NOT NULL` | Email address (max 150 characters, stored in lowercase) |
+| `telefono` | `VARCHAR(20)` | `NOT NULL` | Phone number (max 20 characters, accepts international formats) |
+| `mensaje` | `TEXT` | nullable | Optional message from the contact (max 1000 characters enforced by app) |
+| `origen` | `VARCHAR(50)` | nullable | Source/origin of the contact (e.g., landing page identifier) |
+| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Timestamp when the record was created |
+
+#### Data Validation
+
+Validation is performed at the application layer before inserting data:
+
+**Field Length Validation** (from `app/api/contacto/route.ts:64-70`):
+```typescript
+if (nombre.length > 100 || apellido.length > 100 || telefono.length > 20) {
+  return NextResponse.json(
+    { error: 'Datos exceden el largo permitido' },
+    { status: 400 }
+  );
+}
+```
+
+**Email Validation** (from `app/api/contacto/route.ts:26-30`):
+```typescript
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email) && email.length <= 150;
+}
+```
+
+**Phone Validation** (from `app/api/contacto/route.ts:32-35`):
+```typescript
+function isValidPhone(telefono: string): boolean {
+  return /^\+?[0-9\s()-]{7,15}$/.test(telefono);
+}
+```
+
+**Message Sanitization** (from `app/api/contacto/route.ts:89`):
+```typescript
+const mensajeLimpio = mensaje ? mensaje.substring(0, 1000) : '';
+```
+
+#### Data Transformation
+
+Before insertion, data is cleaned and normalized (from `app/api/contacto/route.ts:93-96`):
+
+```typescript
+await connection.execute(
+  `INSERT INTO contactos (nombre, apellido, correo, telefono, mensaje, origen)
+   VALUES (?, ?, ?, ?, ?, ?)`,
+  [
+    nombre.trim(),
+    apellido.trim(),
+    email.trim().toLowerCase(),
+    telefono.trim(),
+    mensajeLimpio,
+    origen || 'desconocido'
+  ]
+);
+```
+
+- Names and phone numbers are trimmed of whitespace
+- Email addresses are converted to lowercase
+- Default origin is set to `'desconocido'` if not provided
+
+## Database Setup
+
+<Steps>
+  <Step title="Create the database">
+    ```sql
+    CREATE DATABASE polaris_clima
+      CHARACTER SET utf8mb4
+      COLLATE utf8mb4_unicode_ci;
+    ```
+    
+    <Note>
+    Using `utf8mb4` character set ensures proper support for emojis and international characters.
+    </Note>
+  </Step>
+
+  <Step title="Create the contactos table">
+    ```sql
+    USE polaris_clima;
+    
+    CREATE TABLE contactos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nombre VARCHAR(100) NOT NULL,
+      apellido VARCHAR(100) NOT NULL,
+      correo VARCHAR(150) NOT NULL,
+      telefono VARCHAR(20) NOT NULL,
+      mensaje TEXT,
+      origen VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ```
+  </Step>
+
+  <Step title="Create a dedicated database user">
+    ```sql
+    CREATE USER 'polaris_app'@'localhost' IDENTIFIED BY 'secure_password';
+    GRANT SELECT, INSERT ON polaris_clima.contactos TO 'polaris_app'@'localhost';
+    FLUSH PRIVILEGES;
+    ```
+    
+    <Warning>
+    Replace `'secure_password'` with a strong, randomly generated password. Store it in your `.env.local` file.
+    </Warning>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Update your `.env.local` file:
+    
+    ```bash
+    DB_HOST=localhost
+    DB_USER=polaris_app
+    DB_PASSWORD=secure_password
+    DB_NAME=polaris_clima
+    ```
+  </Step>
+</Steps>
+
+## Indexes and Optimization
+
+### Recommended Indexes
+
+For better query performance, consider adding these indexes:
+
+```sql
+-- Index on created_at for time-based queries
+CREATE INDEX idx_created_at ON contactos(created_at);
+
+-- Index on correo for searching by email
+CREATE INDEX idx_correo ON contactos(correo);
+
+-- Index on origen for filtering by source
+CREATE INDEX idx_origen ON contactos(origen);
+```
+
+### Query Examples
+
+**Get recent contacts:**
+```sql
+SELECT * FROM contactos
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+**Search by email:**
+```sql
+SELECT * FROM contactos
+WHERE correo = 'user@example.com';
+```
+
+**Filter by origin:**
+```sql
+SELECT * FROM contactos
+WHERE origen = 'landing-page-1'
+ORDER BY created_at DESC;
+```
+
+**Count contacts by day:**
+```sql
+SELECT DATE(created_at) as date, COUNT(*) as count
+FROM contactos
+GROUP BY DATE(created_at)
+ORDER BY date DESC;
+```
+
+## Migration and Backup
+
+### Backup Database
+
+Create a backup of your database:
+
+```bash
+mysqldump -u polaris_app -p polaris_clima > backup_$(date +%Y%m%d).sql
+```
+
+### Restore Database
+
+Restore from a backup:
+
+```bash
+mysql -u polaris_app -p polaris_clima < backup_20260304.sql
+```
+
+### Export Data to CSV
+
+Export contacts to CSV:
+
+```sql
+SELECT * FROM contactos
+INTO OUTFILE '/tmp/contactos.csv'
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n';
+```
+
+<Note>
+The `OUTFILE` location must be writable by the MySQL server. Check the `secure_file_priv` setting if you encounter permission errors.
+</Note>
+
+## Security and Rate Limiting
+
+### Rate Limiting
+
+The API implements in-memory rate limiting to prevent abuse (from `app/api/contacto/route.ts:4-24`):
+
+```typescript
+const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+const RATE_LIMIT_WINDOW = 10 * 60 * 1000; // 10 minutes
+const MAX_REQUESTS = 4;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now - record.lastReset > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(ip, { count: 1, lastReset: now });
+    return false;
+  }
+
+  if (record.count >= MAX_REQUESTS) {
+    return true;
+  }
+
+  record.count++;
+  return false;
+}
+```
+
+<Warning>
+The in-memory rate limiter resets when the server restarts. For production, consider using a persistent store like Redis for rate limiting across multiple server instances.
+</Warning>
+
+### SQL Injection Prevention
+
+The application uses parameterized queries to prevent SQL injection:
+
+```typescript
+// ✅ SAFE: Using parameterized query
+await connection.execute(
+  `INSERT INTO contactos (nombre, apellido, correo, telefono, mensaje, origen)
+   VALUES (?, ?, ?, ?, ?, ?)`,
+  [nombre, apellido, email, telefono, mensaje, origen]
+);
+
+// ❌ UNSAFE: Never concatenate user input directly
+await connection.execute(
+  `INSERT INTO contactos VALUES ('${nombre}', '${email}', ...)` // NEVER DO THIS
+);
+```
+
+## Troubleshooting
+
+### Connection Errors
+
+**Error: `Access denied for user`**
+- Verify database credentials in `.env.local`
+- Check user permissions: `SHOW GRANTS FOR 'polaris_app'@'localhost';`
+
+**Error: `Unknown database`**
+- Ensure the database exists: `SHOW DATABASES;`
+- Create it if missing: `CREATE DATABASE polaris_clima;`
+
+### Data Too Long Errors
+
+**Error: `Data too long for column`**
+- Application validates field lengths before insertion
+- Check validation logic in `app/api/contacto/route.ts:64-86`
+- Verify column definitions match application limits
+
+### Character Encoding Issues
+
+**Problem: Special characters display incorrectly**
+- Ensure database uses `utf8mb4` character set
+- Check table collation: `SHOW TABLE STATUS LIKE 'contactos';`
+- Update if needed: `ALTER TABLE contactos CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`

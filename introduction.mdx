@@ -1,0 +1,290 @@
+---
+title: Introduction to Polaris Clima
+description: Overview of the Next.js 16 SaaS HVAC services platform for air conditioning in Santiago, Chile
+---
+
+## Welcome to Polaris Clima
+
+Polaris Clima is a modern, high-performance SaaS platform built for HVAC (Heating, Ventilation, and Air Conditioning) services in Santiago, Chile. The platform provides a complete digital presence for air conditioning installation, maintenance, and repair services with a focus on local SEO optimization and user experience.
+
+## What is Polaris Clima?
+
+Polaris Clima is a location-based service platform that helps customers find and request HVAC services in their specific comuna (district) in Santiago. The platform features:
+
+- Dynamic location-based service pages for 17+ comunas in Santiago
+- Professional service catalog (installation, preventive maintenance, corrective maintenance, technical visits)
+- Integrated contact forms with MySQL database storage
+- SEO-optimized pages with structured data (LocalBusiness and Service schemas)
+- Responsive design with smooth animations powered by Framer Motion
+- Static site generation for optimal performance
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Location-Based Pages" icon="map-pin">
+    Dynamic routing for 17 comunas in Santiago with SEO-optimized metadata and localized content for each district.
+  </Card>
+  
+  <Card title="Service Management" icon="wrench">
+    Complete service catalog including installation, preventive maintenance, corrective maintenance, and technical visits.
+  </Card>
+  
+  <Card title="Contact Forms" icon="envelope">
+    Integrated contact forms with rate limiting, validation, and MySQL database storage for lead management.
+  </Card>
+  
+  <Card title="SEO Optimization" icon="chart-line">
+    Structured data, dynamic metadata, geo-targeting, and automatic sitemap generation for maximum visibility.
+  </Card>
+</CardGroup>
+
+## Architecture Overview
+
+Polaris Clima follows a modern Next.js App Router architecture with the following structure:
+
+```
+polaris-clima/
+├── app/                          # Next.js App Router
+│   ├── layout.tsx               # Root layout with SEO metadata
+│   ├── page.tsx                 # Homepage
+│   ├── globals.css              # Global styles
+│   ├── api/
+│   │   └── contacto/
+│   │       └── route.ts         # Contact form API endpoint
+│   ├── aire-acondicionado/
+│   │   └── [comuna]/            # Dynamic location pages
+│   │       ├── page.tsx         # Location page component
+│   │       └── FormContacto.tsx # Location-specific form
+│   ├── servicios/               # Service pages
+│   │   ├── instalacion/
+│   │   ├── mantencion-preventiva/
+│   │   ├── mantencion-correctiva/
+│   │   └── visita-tecnica/
+│   └── contacto/                # Main contact page
+├── components/                   # Reusable React components
+│   ├── Header.tsx
+│   ├── Footer.tsx
+│   ├── ContactUs.tsx
+│   ├── HeroSection.tsx
+│   └── ...
+├── lib/
+│   └── db.ts                    # MySQL database connection
+├── hooks/
+│   └── useContactForm.ts        # Contact form logic
+├── public/                      # Static assets
+└── scripts/
+    └── generate-sitemap.ts      # Sitemap generation
+```
+
+## Tech Stack
+
+### Core Framework
+
+<Note>
+  Polaris Clima uses Next.js 16 with the App Router and static export configuration for optimal performance and deployment flexibility.
+</Note>
+
+- **Next.js 16.1.1** - React framework with App Router
+- **React 19.2.3** - UI library with latest features
+- **TypeScript 5** - Type-safe development
+
+### Styling & UI
+
+```typescript title="tailwind.config.ts"
+import type { Config } from 'tailwindcss';
+import tailwindcssFormsPlugin from '@tailwindcss/forms';
+
+const config: Config = {
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: '#137fec',
+        'background-light': '#f6f7f8',
+        'background-dark': '#101922',
+        'text-primary': '#111418',
+        'text-secondary': '#0ECD61',
+      },
+    },
+  },
+  plugins: [tailwindcssFormsPlugin],
+};
+```
+
+- **Tailwind CSS 4** - Utility-first CSS framework with custom theme
+- **Framer Motion 12** - Animation library for smooth transitions
+- **Montserrat Font** - Google Font for brand consistency
+- **Lucide React** - Icon library
+
+### Database & Backend
+
+- **MySQL 2** - Relational database via mysql2 package
+- **API Routes** - Next.js API routes for contact form handling
+- **Rate Limiting** - In-memory rate limiting for form submissions
+
+### Developer Experience
+
+- **ESLint 9** - Code linting with Next.js config
+- **PostCSS** - CSS processing
+- **pnpm** - Fast, efficient package manager
+- **ts-node** - TypeScript execution for build scripts
+
+## SEO & Performance Features
+
+### Structured Data
+
+The platform implements LocalBusiness and Service schema markup for rich search results:
+
+```typescript title="app/layout.tsx" {219-221}
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="es" className="light">
+      <head>
+        {/* Geo SEO targeting Santiago */}
+        <meta name="geo.region" content="CL-RM" />
+        <meta name="geo.placename" content="Santiago" />
+        <meta name="geo.position" content="-33.4489;-70.6693" />
+        <meta name="ICBM" content="-33.4489, -70.6693" />
+      </head>
+      <body>
+        {/* SEO schemas */}
+        <LocalBusinessSchema />
+        <ServiceSchema />
+        
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
+        <WhatsAppButton />
+      </body>
+    </html>
+  );
+}
+```
+
+### Static Generation
+
+```typescript title="next.config.ts"
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  output: 'export', // Static HTML export
+  images: {
+    unoptimized: true, // For static hosting
+  },
+};
+```
+
+The platform generates static pages for all routes, ensuring:
+- Lightning-fast page loads
+- Easy deployment to any static host
+- No server-side runtime requirements
+- Optimal Core Web Vitals scores
+
+### Dynamic Location Pages
+
+Location-based pages are generated at build time for 17 comunas:
+
+```typescript title="app/aire-acondicionado/[comuna]/page.tsx" {8-27}
+const comunasValidas = [
+  "santiago", "providencia", "nunoa", "las-condes",
+  "vitacura", "la-reina", "macul", "san-joaquin",
+  "san-miguel", "independencia", "recoleta",
+  "estacion-central", "quinta-normal", "pedro-aguirre-cerda",
+  "lo-prado", "cerrillos", "huechuraba", "conchali"
+];
+
+export async function generateStaticParams() {
+  return comunasValidas.map(c => ({ comuna: c }));
+}
+```
+
+## Component Architecture
+
+Polaris Clima uses a component-based architecture with clear separation of concerns:
+
+### Layout Components
+- `Header.tsx` - Responsive navigation with smooth scrolling
+- `Footer.tsx` - Site footer with links and information
+- `WhatsAppButton.tsx` - Floating WhatsApp contact button
+
+### Content Components
+- `HeroSection.tsx` - Main hero banner
+- `ServicesSection.tsx` - Service showcase
+- `BrandsCarousel.tsx` - Partner brand carousel
+- `TestimonialsSection.tsx` - Customer testimonials
+- `ProductsCategories.tsx` - Product catalog
+
+### Form Components
+- `ContactUs.tsx` - Main contact form
+- `FormContacto.tsx` - Location-specific contact form
+- `InputField.tsx` - Reusable form input
+- `FormAlert.tsx` - Form feedback messages
+
+### Schema Components
+- `LocalBusinessSchema.tsx` - Business structured data
+- `ServiceSchema.tsx` - Service structured data
+
+## Database Schema
+
+The contact form stores submissions in a MySQL database:
+
+```typescript title="lib/db.ts"
+import mysql from 'mysql2/promise';
+
+export async function getConnection() {
+  return await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+  });
+}
+```
+
+Table structure:
+```sql
+CREATE TABLE contactos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  apellido VARCHAR(100) NOT NULL,
+  correo VARCHAR(150) NOT NULL,
+  telefono VARCHAR(20) NOT NULL,
+  mensaje TEXT,
+  origen VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get your development environment up and running in minutes
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Learn how to configure the platform for your needs
+  </Card>
+  
+  <Card title="Deployment" icon="cloud" href="/deployment">
+    Deploy Polaris Clima to production
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Explore the API endpoints and integrations
+  </Card>
+</CardGroup>
+
+## Support
+
+For questions or issues:
+- Check the documentation pages
+- Review the source code in `~/workspace/source/`
+- Consult Next.js 16 documentation at [nextjs.org](https://nextjs.org/docs)
+
+<Warning>
+  This platform is optimized for the Chilean market (Santiago) with Spanish language content and local SEO targeting. Adapt localization settings if deploying to different regions.
+</Warning>

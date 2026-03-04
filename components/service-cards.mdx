@@ -1,0 +1,325 @@
+---
+title: 'Service Cards'
+description: 'Reusable card component for displaying service offerings with image, title, description, and CTA link'
+icon: 'table-cells'
+---
+
+## Overview
+
+The `ServiceCard` component is a reusable card component used to display service offerings across the Polaris Clima website. It features a fixed-height image, centered text content, and an animated "Read more" link.
+
+## Props Interface
+
+```tsx
+interface ServiceCardProps {
+  image: string;       // Image path (relative to /public/)
+  title: string;       // Service title
+  description: string; // Service description (truncated to 4 lines)
+  link: string;        // Internal link path
+}
+```
+
+## Props Documentation
+
+<ParamField path="image" type="string" required>
+  Path to the service image, relative to `/public/` directory.
+  
+  **Example:** `"/services/instalacion.jpg"`
+  
+  **Recommended specs:**
+  - Aspect ratio: 16:9 or 3:2
+  - Minimum resolution: 600x400px
+  - Format: WebP or JPEG
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Service title displayed below the image.
+  
+  **Example:** `"Instalación de Aire Acondicionado"`
+  
+  Styled with:
+  - `text-base` size
+  - `font-bold` weight
+  - `text-gray-900` color
+</ParamField>
+
+<ParamField path="description" type="string" required>
+  Service description text. Automatically truncated to 4 lines with ellipsis using `line-clamp-4`.
+  
+  **Example:** `"Instalación profesional de equipos de aire acondicionado para espacios residenciales y comerciales..."`
+  
+  Keep descriptions under 200 characters for optimal display.
+</ParamField>
+
+<ParamField path="link" type="string" required>
+  Internal navigation link (Next.js Link href).
+  
+  **Example:** `"/servicios/instalacion"`
+  
+  Uses Next.js `Link` component for optimized client-side navigation.
+</ParamField>
+
+## Usage
+
+### Single Card
+
+```tsx
+import ServiceCard from '@/components/ServiceCard';
+
+export default function ServicesPage() {
+  return (
+    <ServiceCard
+      image="/services/instalacion.jpg"
+      title="Instalación de Aire Acondicionado"
+      description="Instalación profesional de equipos de aire acondicionado con garantía y soporte técnico."
+      link="/servicios/instalacion"
+    />
+  );
+}
+```
+
+### Grid Layout (Recommended)
+
+```tsx
+import ServiceCard from '@/components/ServiceCard';
+
+const services = [
+  {
+    image: '/services/instalacion.jpg',
+    title: 'Instalación',
+    description: 'Instalación profesional de equipos...',
+    link: '/servicios/instalacion'
+  },
+  {
+    image: '/services/mantencion.jpg',
+    title: 'Mantención Preventiva',
+    description: 'Mantención programada para...',
+    link: '/servicios/mantencion-preventiva'
+  },
+  // ... more services
+];
+
+export default function ServicesSection() {
+  return (
+    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
+      {services.map((service) => (
+        <ServiceCard key={service.link} {...service} />
+      ))}
+    </section>
+  );
+}
+```
+
+## Component Structure
+
+### Card Container
+
+```tsx
+<div className="
+  group                    // Enables group-hover utilities
+  bg-gray-100             // Light gray background
+  border border-slate-200 // Subtle border
+  rounded-2xl             // Large border radius
+  shadow-sm               // Soft shadow
+  hover:shadow-lg         // Enhanced shadow on hover
+  transition-all          // Smooth transitions
+  overflow-hidden         // Clips image overflow
+  flex flex-col           // Vertical layout
+  w-full                  // Full width of container
+">
+```
+
+### Image Container
+
+```tsx
+<div className="relative w-full h-52 shrink-0">
+  <Image
+    src={image}
+    alt={title}
+    fill
+    sizes="(max-width: 768px) 100vw, 300px"
+    className="object-cover"
+  />
+</div>
+```
+
+**Key features:**
+- Fixed height of `h-52` (208px)
+- `shrink-0` prevents flexbox compression
+- `object-cover` ensures proper image cropping
+- Responsive `sizes` for optimal loading
+
+### Content Section
+
+```tsx
+<div className="flex flex-col items-center text-center px-6 py-6 gap-3 flex-1">
+  <h2 className="text-base font-bold text-gray-900 leading-snug">
+    {title}
+  </h2>
+  
+  <p className="text-sm text-gray-700 leading-relaxed line-clamp-4">
+    {description}
+  </p>
+  
+  <Link
+    href={link}
+    className="mt-auto pt-2 text-green-500 hover:text-blue-700 ..."
+  >
+    Leer más
+    <svg className="w-4 h-4" ... />
+  </Link>
+</div>
+```
+
+**Key features:**
+- `flex-1` allows content to fill available space
+- `mt-auto` pushes link to bottom of card
+- `line-clamp-4` truncates description
+
+## Styling Details
+
+### Hover Effects
+
+<Tabs>
+  <Tab title="Card Shadow">
+    ```css
+    shadow-sm → hover:shadow-lg
+    ```
+    Subtle elevation increase on hover
+  </Tab>
+  
+  <Tab title="Link Animation">
+    ```css
+    gap-1 → hover:gap-2
+    ```
+    Arrow icon slides right on hover
+  </Tab>
+  
+  <Tab title="Link Color">
+    ```css
+    text-green-500 → hover:text-blue-700
+    ```
+    Color transition from green to blue
+  </Tab>
+</Tabs>
+
+### Responsive Behavior
+
+The card adapts to container width:
+
+| Container Width | Image Display | Text Layout |
+|----------------|---------------|-------------|
+| < 768px        | Full width, h-52 | Center-aligned |
+| ≥ 768px        | Max 300px wide | Center-aligned |
+| Grid (3 cols)  | ~360px wide | Center-aligned |
+
+## Advanced Usage
+
+### With External Link
+
+If you need to link to an external URL:
+
+```tsx
+import Link from 'next/link';
+import Image from 'next/image';
+
+interface ServiceCardProps {
+  image: string;
+  title: string;
+  description: string;
+  link: string;
+  external?: boolean; // Add this prop
+}
+
+export default function ServiceCard({ 
+  image, 
+  title, 
+  description, 
+  link,
+  external = false 
+}: ServiceCardProps) {
+  const linkProps = external 
+    ? { target: '_blank', rel: 'noopener noreferrer' }
+    : {};
+    
+  return (
+    <div className="...">
+      {/* ... */}
+      <Link href={link} {...linkProps}>
+        Leer más
+      </Link>
+    </div>
+  );
+}
+```
+
+### With Custom CTA Text
+
+```tsx
+interface ServiceCardProps {
+  // ... existing props
+  ctaText?: string; // Add optional CTA text
+}
+
+export default function ServiceCard({ 
+  // ... existing props
+  ctaText = 'Leer más' // Default value
+}: ServiceCardProps) {
+  return (
+    <div className="...">
+      {/* ... */}
+      <Link href={link}>
+        {ctaText}
+        <svg ... />
+      </Link>
+    </div>
+  );
+}
+```
+
+## Accessibility
+
+<AccordionGroup>
+  <Accordion title="Image Alt Text">
+    Uses `title` prop as alt text for images. Ensure titles are descriptive.
+  </Accordion>
+  
+  <Accordion title="Semantic HTML">
+    - Uses `<h2>` for title (appropriate heading level)
+    - Uses `<Link>` for navigation
+    - Proper paragraph structure
+  </Accordion>
+  
+  <Accordion title="Color Contrast">
+    - Title: gray-900 on gray-100 (WCAG AAA)
+    - Description: gray-700 on gray-100 (WCAG AA)
+    - Link: green-500/blue-700 on gray-100 (WCAG AA)
+  </Accordion>
+</AccordionGroup>
+
+## Performance Considerations
+
+<Card title="Image Optimization" icon="gauge-high">
+  - Uses Next.js Image component for automatic optimization
+  - Responsive `sizes` attribute for efficient loading
+  - `object-cover` ensures consistent display
+  - Lazy loading by default (priority={false})
+</Card>
+
+<Card title="CSS Performance" icon="bolt">
+  - Tailwind utilities compiled at build time
+  - No runtime CSS-in-JS overhead
+  - Hardware-accelerated transforms on hover
+</Card>
+
+## Source Location
+
+```bash
+~/workspace/source/components/ServiceCard.tsx
+```
+
+## Related Components
+
+- [Hero Section](/components/hero-section) - Main landing component
+- [Services Feature](/features/services) - Service page implementations
+- [Contact Form](/components/contact-form) - Contact functionality

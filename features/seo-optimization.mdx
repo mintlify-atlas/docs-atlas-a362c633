@@ -1,0 +1,681 @@
+---
+title: 'SEO Optimization'
+description: 'Structured data schemas, metadata, and sitemap configuration for search engine optimization'
+icon: 'magnifying-glass'
+---
+
+## Overview
+
+Polaris Clima implements comprehensive SEO optimization through structured data (Schema.org), dynamic metadata generation, sitemap configuration, and geo-targeting meta tags.
+
+## Structured Data Schemas
+
+Two JSON-LD schemas are embedded on every page to help search engines understand the business:
+
+1. **LocalBusinessSchema** (HVACBusiness)
+2. **ServiceSchema** (Service catalog)
+
+### LocalBusinessSchema
+
+**Location**: `components/LocalBusinessSchema.tsx`
+
+**Schema Type**: `HVACBusiness` (specialized LocalBusiness type)
+
+<CodeGroup>
+```tsx Component Implementation
+export default function LocalBusinessSchema() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "HVACBusiness",
+    name: "Polaris Clima",
+    description:
+      "Instalación, mantención y reparación de aire acondicionado en Santiago. Servicio profesional en Las Condes, Providencia, Ñuñoa y Vitacura.",
+    url: "https://polarisclima.cl",
+    logo: "https://polarisclima.cl/logoPolaris.png",
+    image: "https://polarisclima.cl/logoPolaris.png",
+    telephone: "+56979430510",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Santiago",
+      addressRegion: "Región Metropolitana",
+      addressCountry: "CL",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: -33.4489,
+      longitude: -70.6693,
+    },
+    areaServed: [
+      { "@type": "City", name: "Santiago" },
+      { "@type": "City", name: "Providencia" },
+      { "@type": "City", name: "Ñuñoa" },
+      // ... 15 more communes
+    ],
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        opens: "09:00",
+        closes: "18:00",
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: "Saturday",
+        opens: "09:00",
+        closes: "14:00",
+      },
+    ],
+    priceRange: "$$",
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+```
+
+```json Rendered Output
+{
+  "@context": "https://schema.org",
+  "@type": "HVACBusiness",
+  "name": "Polaris Clima",
+  "telephone": "+56979430510",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Santiago",
+    "addressRegion": "Región Metropolitana",
+    "addressCountry": "CL"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": -33.4489,
+    "longitude": -70.6693
+  }
+}
+```
+</CodeGroup>
+
+#### Key Properties
+
+<ParamField path="@type" type="string">
+  `HVACBusiness` - Specialized business type for heating, ventilation, and air conditioning services
+</ParamField>
+
+<ParamField path="name" type="string">
+  Business name: "Polaris Clima"
+</ParamField>
+
+<ParamField path="address" type="PostalAddress">
+  Physical location in Santiago, Región Metropolitana, Chile
+</ParamField>
+
+<ParamField path="geo" type="GeoCoordinates">
+  Precise latitude/longitude: -33.4489, -70.6693 (Santiago center)
+</ParamField>
+
+<ParamField path="areaServed" type="City[]">
+  Array of 18 communes where services are offered. Critical for local SEO.
+</ParamField>
+
+<ParamField path="openingHoursSpecification" type="OpeningHoursSpecification[]">
+  Business hours:
+  - Mon-Fri: 09:00-18:00
+  - Saturday: 09:00-14:00
+  - Sunday: Closed
+</ParamField>
+
+<ParamField path="priceRange" type="string">
+  "$$" indicates moderate pricing
+</ParamField>
+
+### ServiceSchema
+
+**Location**: `components/ServiceSchema.tsx`
+
+**Schema Type**: `Service` with nested `OfferCatalog`
+
+<CodeGroup>
+```tsx Service Schema
+export default function ServiceSchema() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    serviceType: "Climatización",
+    provider: {
+      "@type": "LocalBusiness",
+      name: "Polaris Clima",
+      url: "https://www.polarisclima.cl",
+      telephone: "+56979430510",
+      areaServed: [
+        { "@type": "City", name: "Santiago" },
+        { "@type": "City", name: "Providencia" },
+        // ... 16 more communes
+      ],
+    },
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: "Servicios de Climatización",
+      itemListElement: [
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Instalación de aire acondicionado",
+            description:
+              "Instalación profesional de equipos split para hogares y oficinas en Santiago."
+          }
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Mantención de aire acondicionado",
+            description:
+              "Servicio de mantención preventiva para mejorar rendimiento y prolongar la vida útil del equipo."
+          }
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Reparación de aire acondicionado",
+            description:
+              "Diagnóstico y reparación de fallas en sistemas de climatización domiciliarios y comerciales."
+          }
+        }
+      ]
+    }
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+```
+</CodeGroup>
+
+#### Service Catalog Structure
+
+<Accordion title="Installation Service">
+```json
+{
+  "@type": "Offer",
+  "itemOffered": {
+    "@type": "Service",
+    "name": "Instalación de aire acondicionado",
+    "description": "Instalación profesional de equipos split para hogares y oficinas en Santiago."
+  }
+}
+```
+
+Helps search engines understand the primary installation service offering.
+</Accordion>
+
+<Accordion title="Preventive Maintenance">
+```json
+{
+  "@type": "Offer",
+  "itemOffered": {
+    "@type": "Service",
+    "name": "Mantención de aire acondicionado",
+    "description": "Servicio de mantención preventiva para mejorar rendimiento y prolongar la vida útil del equipo."
+  }
+}
+```
+
+Describes ongoing maintenance services.
+</Accordion>
+
+<Accordion title="Repair Service">
+```json
+{
+  "@type": "Offer",
+  "itemOffered": {
+    "@type": "Service",
+    "name": "Reparación de aire acondicionado",
+    "description": "Diagnóstico y reparación de fallas en sistemas de climatización domiciliarios y comerciales."
+  }
+}
+```
+
+Covers corrective maintenance and troubleshooting.
+</Accordion>
+
+## Metadata Configuration
+
+### Root Layout Metadata
+
+**Location**: `app/layout.tsx`
+
+<CodeGroup>
+```typescript Root Metadata
+export const metadata: Metadata = {
+  title: {
+    default: 'Polaris Clima - Climatización en Santiago',
+    template: '%s | Polaris Clima',
+  },
+  description:
+    'Expertos en instalación, mantención y reparación de aire acondicionado en Santiago. Servicio profesional para hogares y oficinas en toda la Región Metropolitana.',
+  
+  keywords: [
+    'aire acondicionado Santiago',
+    'instalación aire acondicionado',
+    'mantención aire acondicionado',
+    'reparación aire acondicionado',
+    'climatización hogar Santiago',
+    'aire acondicionado oficina',
+    'técnico aire acondicionado Santiago'
+  ],
+
+  authors: [{ name: 'Polaris Clima' }],
+  creator: 'Polaris Clima',
+  metadataBase: new URL('https://www.polarisclima.cl'),
+
+  openGraph: {
+    title: 'Polaris Clima - Climatización en Santiago',
+    description:
+      'Instalación, mantención y reparación de aire acondicionado en Santiago. Calidad, eficiencia y confort.',
+    url: 'https://www.polarisclima.cl',
+    siteName: 'Polaris Clima',
+    locale: 'es_CL',
+    type: 'website',
+    images: [
+      {
+        url: '/logoPolaris.png',
+        width: 1200,
+        height: 630,
+        alt: 'Polaris Clima - Climatización en Santiago',
+      },
+    ],
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Polaris Clima - Climatización en Santiago',
+    description:
+      'Instalación, mantención y reparación de aire acondicionado en Santiago.',
+    images: ['/logoPolaris.png'],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+  },
+
+  icons: {
+    icon: '/logoPolaris.png',
+    apple: '/logoPolaris.png',
+  },
+};
+```
+</CodeGroup>
+
+### Geo-Targeting Meta Tags
+
+<CodeGroup>
+```tsx Geo Meta Tags
+<head>
+  {/* Geographic location */}
+  <meta name="geo.region" content="CL-RM" />
+  <meta name="geo.placename" content="Santiago" />
+  <meta name="geo.position" content="-33.4489;-70.6693" />
+  <meta name="ICBM" content="-33.4489, -70.6693" />
+  
+  {/* Browser theme color */}
+  <meta name="theme-color" content="#4f46e5" />
+  
+  {/* Disable automatic phone number detection */}
+  <meta name="format-detection" content="telephone=no" />
+</head>
+```
+</CodeGroup>
+
+<Info>
+**CL-RM** = Chile - Región Metropolitana (ISO 3166-2 code)
+
+Geo tags help search engines and directories understand the business's physical location and service area.
+</Info>
+
+### Dynamic Page Metadata
+
+Commune-specific pages generate custom metadata:
+
+<CodeGroup>
+```typescript Dynamic Metadata (Commune Pages)
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { comuna } = await params;
+  const comunaFormateada = formatComuna(comuna);
+
+  return {
+    title: `Aire Acondicionado en ${comunaFormateada}`,
+    description: `Instalación, mantención y reparación de aire acondicionado en ${comunaFormateada}. Servicio profesional a domicilio.`,
+  };
+}
+
+// Rendered as:
+// <title>Aire Acondicionado en Las Condes | Polaris Clima</title>
+// <meta name="description" content="Instalación, mantención y reparación de aire acondicionado en Las Condes. Servicio profesional a domicilio.">
+```
+</CodeGroup>
+
+## Sitemap Configuration
+
+**Location**: `public/sitemap.xml`
+
+<CodeGroup>
+```xml Sitemap Structure
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>https://www.polarisclima.cl/</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1</priority>
+  </url>
+
+  <!-- Service Pages (Priority: 0.9) -->
+  <url>
+    <loc>https://www.polarisclima.cl/servicios/instalacion</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.polarisclima.cl/servicios/mantencion-correctiva</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.polarisclima.cl/servicios/mantencion-preventiva</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.polarisclima.cl/contacto</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Commune Pages (Priority: 0.8) -->
+  <url>
+    <loc>https://www.polarisclima.cl/aire-acondicionado/santiago</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- ... 17 more commune URLs -->
+  
+</urlset>
+```
+</CodeGroup>
+
+### Priority Hierarchy
+
+| Page Type | Priority | Rationale |
+|-----------|----------|----------|
+| Homepage | 1.0 | Most important page |
+| Service Pages | 0.9 | Core offerings |
+| Commune Pages | 0.8 | Local landing pages |
+| General Pages | 0.5-0.7 | Supporting content |
+
+### Change Frequency
+
+All pages set to `monthly` as content is relatively stable (service descriptions, contact info, etc.).
+
+## Schema Integration in Layout
+
+<CodeGroup>
+```tsx Layout Structure
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="es" className="light">
+      <head>
+        {/* Geo meta tags */}
+      </head>
+      
+      <body>
+        {/* Structured Data Schemas */}
+        <LocalBusinessSchema />
+        <ServiceSchema />
+        
+        <div className="relative flex min-h-screen w-full flex-col">
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
+        
+        <WhatsAppButton />
+      </body>
+    </html>
+  );
+}
+```
+</CodeGroup>
+
+<Tip>
+Both schema components are rendered at the top of the body, making them immediately available to search engine crawlers.
+</Tip>
+
+## SEO Benefits by Feature
+
+<CardGroup cols={2}>
+  <Card title="HVACBusiness Schema" icon="building">
+    Helps Google show business info in search results:
+    - Business name and phone
+    - Operating hours
+    - Service area
+    - Location on maps
+  </Card>
+  
+  <Card title="Service Catalog" icon="list">
+    Enables rich snippets for service searches:
+    - Service names
+    - Descriptions
+    - Provider information
+    - Service availability
+  </Card>
+  
+  <Card title="Location-Specific Pages" icon="map-pin">
+    Targets local searches:
+    - "aire acondicionado Providencia"
+    - "instalacion AC Las Condes"
+    - Unique content per commune
+  </Card>
+  
+  <Card title="Open Graph" icon="share-nodes">
+    Better social media sharing:
+    - Custom preview images
+    - Formatted titles
+    - Compelling descriptions
+  </Card>
+</CardGroup>
+
+## Testing Structured Data
+
+<Steps>
+  <Step title="Google Rich Results Test">
+    Visit: https://search.google.com/test/rich-results
+    
+    Enter URL: `https://polarisclima.cl`
+    
+    Should detect:
+    - LocalBusiness (HVACBusiness)
+    - Service schema
+  </Step>
+  
+  <Step title="Schema Markup Validator">
+    Visit: https://validator.schema.org/
+    
+    Paste the JSON-LD from page source
+    
+    Verify no errors or warnings
+  </Step>
+  
+  <Step title="Inspect Page Source">
+    ```bash
+    curl https://polarisclima.cl | grep -A 50 'application/ld+json'
+    ```
+    
+    Should show both LocalBusinessSchema and ServiceSchema
+  </Step>
+</Steps>
+
+## Google Search Console Integration
+
+<Accordion title="Submit Sitemap">
+1. Go to Google Search Console
+2. Select property: `polarisclima.cl`
+3. Navigate to Sitemaps
+4. Submit: `https://www.polarisclima.cl/sitemap.xml`
+5. Wait for Google to crawl (may take days/weeks)
+</Accordion>
+
+<Accordion title="Monitor Coverage">
+Check which pages are indexed:
+
+1. Search Console → Coverage report
+2. Look for all 18 commune pages
+3. Verify service pages are indexed
+4. Fix any errors or warnings
+</Accordion>
+
+<Accordion title="Track Performance">
+Monitor search queries:
+
+1. Search Console → Performance
+2. Filter by query: "aire acondicionado [comuna]"
+3. Track impressions, clicks, CTR
+4. Identify opportunities
+</Accordion>
+
+## Local SEO Checklist
+
+<Steps>
+  <Step title="Structured Data">
+    - ✅ LocalBusinessSchema with HVACBusiness type
+    - ✅ ServiceSchema with offer catalog
+    - ✅ All 18 communes in areaServed
+  </Step>
+  
+  <Step title="Metadata">
+    - ✅ Unique titles per page
+    - ✅ Descriptive meta descriptions
+    - ✅ Geo-targeting meta tags
+    - ✅ Open Graph tags
+  </Step>
+  
+  <Step title="Content">
+    - ✅ Location-specific landing pages
+    - ✅ Service pages with detailed descriptions
+    - ✅ Contact information visible
+    - ✅ Spanish language (es_CL)
+  </Step>
+  
+  <Step title="Technical">
+    - ✅ XML sitemap submitted
+    - ✅ Robots.txt allows crawling
+    - ✅ HTTPS enabled
+    - ✅ Mobile-responsive design
+  </Step>
+  
+  <Step title="Performance">
+    - ✅ Static site generation (fast loads)
+    - ✅ Image optimization (Next.js Image)
+    - ✅ Minimal JavaScript bundle
+  </Step>
+</Steps>
+
+## Improving SEO Further
+
+<CardGroup cols={2}>
+  <Card title="Add Reviews Schema" icon="star">
+    Implement AggregateRating schema with customer reviews to show star ratings in search results
+  </Card>
+  
+  <Card title="Create Blog" icon="newspaper">
+    Add content marketing with AC maintenance tips, buyer guides, seasonal advice
+  </Card>
+  
+  <Card title="Build Backlinks" icon="link">
+    Get links from local directories, partner sites, industry publications
+  </Card>
+  
+  <Card title="Google My Business" icon="google">
+    Claim and optimize GMB listing with photos, posts, Q&A
+  </Card>
+  
+  <Card title="Video Content" icon="video">
+    Add VideoObject schema for installation/maintenance tutorial videos
+  </Card>
+  
+  <Card title="FAQ Schema" icon="question">
+    Implement FAQPage schema for common customer questions
+  </Card>
+</CardGroup>
+
+## Monitoring Tools
+
+<Tabs>
+  <Tab title="Google Search Console">
+    **Primary tool for monitoring search performance**
+    
+    - Submit and monitor sitemap
+    - Track search queries and rankings
+    - Identify crawl errors
+    - Monitor rich result status
+    - View mobile usability
+  </Tab>
+  
+  <Tab title="Google Analytics">
+    **Track user behavior and conversions**
+    
+    - Organic search traffic
+    - Bounce rate by page
+    - Form submission conversion rate
+    - Traffic by commune (using origen parameter)
+    - User flow analysis
+  </Tab>
+  
+  <Tab title="Rich Results Test">
+    **Validate structured data**
+    
+    https://search.google.com/test/rich-results
+    
+    - Test individual URLs
+    - Preview how results appear
+    - Identify schema errors
+    - Validate fixes
+  </Tab>
+  
+  <Tab title="PageSpeed Insights">
+    **Monitor performance metrics**
+    
+    https://pagespeed.web.dev/
+    
+    - Core Web Vitals
+    - Mobile performance
+    - SEO recommendations
+    - Accessibility checks
+  </Tab>
+</Tabs>
+
+## Related Documentation
+
+- [Location Pages](/features/location-pages) - Dynamic commune pages
+- [Services](/features/services) - Service page implementations
+- [Contact System](/features/contact-system) - Lead generation system

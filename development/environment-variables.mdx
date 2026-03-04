@@ -1,0 +1,252 @@
+---
+title: 'Environment Variables'
+description: 'Configure environment variables for Polaris Clima'
+---
+
+## Overview
+
+Polaris Clima uses environment variables to configure database connections and API endpoints. These variables should be defined in a `.env.local` file in the root directory of your project.
+
+<Warning>
+Never commit `.env.local` or any file containing sensitive credentials to version control. Add it to your `.gitignore` file.
+</Warning>
+
+## Required Variables
+
+### Database Configuration
+
+These variables configure the MySQL database connection used by the application.
+
+#### `DB_HOST`
+
+**Description:** The hostname or IP address of your MySQL database server.
+
+**Example values:**
+- Development: `localhost` or `127.0.0.1`
+- Production: `db.example.com` or `10.0.1.50`
+
+```bash
+DB_HOST=localhost
+```
+
+<Note>
+If using Docker or a remote database, use the appropriate hostname or service name.
+</Note>
+
+#### `DB_USER`
+
+**Description:** The MySQL user account with access to the database.
+
+**Example values:**
+- Development: `root` or `dev_user`
+- Production: `polaris_app` (use a dedicated user with minimal permissions)
+
+```bash
+DB_USER=polaris_app
+```
+
+<Warning>
+In production, avoid using the `root` user. Create a dedicated database user with only the necessary permissions (SELECT, INSERT on the `contactos` table).
+</Warning>
+
+#### `DB_PASSWORD`
+
+**Description:** The password for the MySQL user account.
+
+**Example values:**
+- Development: `password123` (use a simple password locally)
+- Production: `Xy9$mK2!pL8qR5nZ` (use a strong, randomly generated password)
+
+```bash
+DB_PASSWORD=your_secure_password
+```
+
+#### `DB_NAME`
+
+**Description:** The name of the MySQL database to connect to.
+
+**Example value:** `polaris_clima`
+
+```bash
+DB_NAME=polaris_clima
+```
+
+### Public Variables
+
+#### `NEXT_PUBLIC_API_CONTACTO`
+
+**Description:** The API endpoint for the contact form. This variable is prefixed with `NEXT_PUBLIC_` which means it will be embedded in the client-side bundle and accessible in browser JavaScript.
+
+**Example value:** `/api/contacto`
+
+```bash
+NEXT_PUBLIC_API_CONTACTO=/api/contacto
+```
+
+<Note>
+Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser. Never use this prefix for sensitive values like API keys or database credentials.
+</Note>
+
+## Complete Example
+
+Create a `.env.local` file in your project root with the following content:
+
+```bash title=".env.local"
+# Database Configuration
+DB_HOST=localhost
+DB_USER=polaris_app
+DB_PASSWORD=your_secure_password
+DB_NAME=polaris_clima
+
+# Public API Endpoints
+NEXT_PUBLIC_API_CONTACTO=/api/contacto
+```
+
+## Usage in Code
+
+### Server-Side Usage
+
+Environment variables are accessed in server-side code using `process.env`:
+
+```typescript title="lib/db.ts"
+import mysql from 'mysql2/promise';
+
+export async function getConnection() {
+  return await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+  });
+}
+```
+
+This pattern is used in `lib/db.ts:3-10` to establish database connections.
+
+### Client-Side Usage
+
+Public environment variables can be accessed in client-side code:
+
+```typescript
+const apiEndpoint = process.env.NEXT_PUBLIC_API_CONTACTO;
+
+const response = await fetch(apiEndpoint, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(formData),
+});
+```
+
+<Warning>
+Only variables prefixed with `NEXT_PUBLIC_` are available in client-side code. Regular environment variables like `DB_PASSWORD` are only accessible server-side.
+</Warning>
+
+## Environment-Specific Configuration
+
+### Development
+
+For local development, use `.env.local`:
+
+```bash
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=polaris_clima
+NEXT_PUBLIC_API_CONTACTO=/api/contacto
+```
+
+### Staging
+
+For staging environments, configure variables in your deployment platform:
+
+```bash
+DB_HOST=staging-db.example.com
+DB_USER=staging_user
+DB_PASSWORD=<secure-password>
+DB_NAME=polaris_clima_staging
+NEXT_PUBLIC_API_CONTACTO=/api/contacto
+```
+
+### Production
+
+For production, use environment variables from your hosting provider:
+
+```bash
+DB_HOST=prod-db.example.com
+DB_USER=prod_user
+DB_PASSWORD=<very-secure-password>
+DB_NAME=polaris_clima_prod
+NEXT_PUBLIC_API_CONTACTO=/api/contacto
+```
+
+<Note>
+Most hosting platforms (Vercel, Netlify, AWS, etc.) provide a dashboard to configure environment variables securely.
+</Note>
+
+## Security Best Practices
+
+<Steps>
+  <Step title="Never commit credentials">
+    Add `.env.local` to your `.gitignore` file:
+    
+    ```gitignore
+    # Environment variables
+    .env.local
+    .env*.local
+    ```
+  </Step>
+
+  <Step title="Use strong passwords">
+    Generate strong passwords for production databases:
+    
+    ```bash
+    openssl rand -base64 32
+    ```
+  </Step>
+
+  <Step title="Limit database permissions">
+    Create a dedicated MySQL user with minimal permissions:
+    
+    ```sql
+    CREATE USER 'polaris_app'@'%' IDENTIFIED BY 'secure_password';
+    GRANT SELECT, INSERT ON polaris_clima.contactos TO 'polaris_app'@'%';
+    FLUSH PRIVILEGES;
+    ```
+  </Step>
+
+  <Step title="Rotate credentials regularly">
+    Change database passwords periodically and update environment variables accordingly.
+  </Step>
+
+  <Step title="Use different credentials per environment">
+    Never share production credentials with development or staging environments.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Variables Not Loading
+
+If environment variables aren't being recognized:
+
+1. Ensure the file is named exactly `.env.local`
+2. Restart the development server after making changes
+3. Check for syntax errors (no spaces around `=`)
+4. Verify the file is in the project root directory
+
+### Database Connection Failed
+
+If you see database connection errors:
+
+1. Verify all `DB_*` variables are set correctly
+2. Test the connection manually: `mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME`
+3. Check if MySQL is running
+4. Verify firewall rules allow database connections
+
+### Public Variables Not Available Client-Side
+
+If `NEXT_PUBLIC_*` variables are undefined in the browser:
+
+1. Ensure the variable name starts with `NEXT_PUBLIC_`
+2. Restart the development server (variables are embedded at build time)
+3. Clear the Next.js cache: `rm -rf .next`

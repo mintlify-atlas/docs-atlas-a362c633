@@ -1,0 +1,173 @@
+---
+title: 'Hero Section'
+description: 'Full-screen hero component with responsive imagery, logo overlay, and call-to-action buttons'
+icon: 'image'
+---
+
+## Overview
+
+The `HeroSection` component is a full-viewport hero section that serves as the primary landing element for the Polaris Clima website. It features a responsive background image, centered logo, dynamic heading, and floating action buttons for contact and WhatsApp.
+
+## Features
+
+- Full-viewport responsive layout (65vh to 100vh)
+- Priority-loaded hero image with Next.js Image optimization
+- Centered logo with responsive sizing
+- Glassmorphism-styled floating CTA buttons
+- Responsive typography and spacing
+- Direct WhatsApp integration
+
+## Usage
+
+```tsx
+import HeroSection from '@/components/HeroSection';
+
+export default function HomePage() {
+  return (
+    <main>
+      <HeroSection />
+      {/* Other sections */}
+    </main>
+  );
+}
+```
+
+## Component Structure
+
+The component is a static component (no props) with the following internal structure:
+
+### Background Image Layer
+
+Uses Next.js `Image` component with:
+- `fill` layout for full coverage
+- `priority` loading for LCP optimization
+- Responsive `object-position` adjustments
+- WebP format for optimal performance
+
+### Logo Overlay
+
+Centered logo positioned at the top of the hero:
+- Responsive width from 260px (mobile) to 460px (2xl screens)
+- Drop shadow for visibility
+- Priority loading
+
+### Content Section
+
+Main heading with:
+- Responsive text sizing (2xl to 7xl)
+- Two-tone color scheme (gray-900 and blue-800)
+- Line breaks for improved readability
+
+### Floating Action Buttons
+
+Two glassmorphic buttons:
+
+<Card title="Contact Button" icon="envelope">
+  Links to `/contacto` page with blue styling
+</Card>
+
+<Card title="WhatsApp Button" icon="whatsapp">
+  Opens WhatsApp with pre-filled message in Spanish
+</Card>
+
+## Styling Approach
+
+### Responsive Heights
+
+```tsx
+className="
+  h-[65vh]        // Mobile: 65% viewport height
+  min-h-[520px]   // Minimum height constraint
+  max-h-[920px]   // Maximum height constraint
+  md:h-[70vh]     // Tablet: 70% viewport
+  lg:h-[100vh]    // Desktop: Full viewport
+"
+```
+
+### Glassmorphism Effects
+
+```tsx
+backdrop-blur-xl          // Strong blur effect
+bg-blue-700               // Semi-transparent background
+border border-white/20    // Subtle border
+shadow-lg                 // Elevated shadow
+hover:scale-105           // Smooth scale on hover
+```
+
+## Responsive Behavior
+
+| Breakpoint | Logo Width | Text Size | Button Position |
+|------------|------------|-----------|----------------|
+| Mobile     | 260px      | text-2xl  | bottom-20 left-6 |
+| sm         | 300px      | text-3xl  | Same |
+| md         | 280px      | text-4xl  | bottom-20 left-20 |
+| lg         | 340px      | text-6xl  | bottom-24 centered |
+| xl         | 400px      | text-7xl  | bottom-30 centered |
+| 2xl        | 460px      | text-7xl  | Same |
+
+## Image Requirements
+
+<ParamField path="heroImageUrl" type="string" default="/hero/heroSection.webp">
+  Hero background image path. Should be:
+  - WebP format for performance
+  - Minimum 1920x1080 resolution
+  - Optimized for object-cover display
+  - Placed in `/public/hero/` directory
+</ParamField>
+
+<ParamField path="logoUrl" type="string" default="/logoPolaris.png">
+  Company logo image path. Should be:
+  - PNG format with transparency
+  - High resolution (recommended 500x140)
+  - Placed in `/public/` directory
+</ParamField>
+
+## WhatsApp Integration
+
+The WhatsApp button uses the following message template:
+
+```tsx
+const whatsappMessage = 
+  'Hola, me gustaría solicitar información sobre sus servicios de instalación de aire acondicionado.';
+
+const whatsappUrl = `https://wa.me/56979430510?text=${encodeURIComponent(whatsappMessage)}`;
+```
+
+<Note>
+  The phone number `56979430510` is hardcoded for Chile (+56). Update this value if deploying for different regions.
+</Note>
+
+## Accessibility
+
+- Semantic HTML structure with `<section>` element
+- Descriptive alt text for images
+- Proper heading hierarchy with `<h1>`
+- Sufficient color contrast for text
+- Focus states on interactive elements
+
+## Performance Optimization
+
+<Steps>
+  <Step title="Priority Loading">
+    Both hero image and logo use `priority` prop to optimize LCP (Largest Contentful Paint)
+  </Step>
+  
+  <Step title="Responsive Sizing">
+    Uses `sizes` attribute for optimal image loading: `sizes="100vw"`
+  </Step>
+  
+  <Step title="WebP Format">
+    Hero image uses WebP format for 25-35% smaller file size vs JPEG
+  </Step>
+</Steps>
+
+## Source Location
+
+```bash
+~/workspace/source/components/HeroSection.tsx
+```
+
+## Related Components
+
+- [WhatsApp Button](/components/whatsapp-button) - Floating WhatsApp button used throughout the site
+- [Contact Form](/components/contact-form) - Destination of the "Contáctanos" button

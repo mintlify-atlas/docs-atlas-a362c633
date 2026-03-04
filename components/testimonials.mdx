@@ -1,0 +1,456 @@
+---
+title: 'Testimonials'
+description: 'Responsive testimonials section with infinite carousel on mobile and grid layout on desktop'
+icon: 'quote-left'
+---
+
+## Overview
+
+The `TestimonialsSection` component displays customer testimonials with an intelligent responsive design: infinite horizontal carousel on mobile and a static grid on desktop. Features smooth auto-scroll, pause-on-interaction, and star ratings.
+
+<Warning>
+  This is a **client component** (`'use client'`) that uses React hooks for animation control.
+</Warning>
+
+## Features
+
+- Infinite horizontal scroll on mobile (auto-animated)
+- Static grid layout on desktop (1-3 columns)
+- Pause animation on hover/touch
+- Smooth RequestAnimationFrame-based animation
+- Responsive column count based on testimonial quantity
+- Star rating display
+- Duplicate testimonials for seamless loop
+
+## Usage
+
+```tsx
+import TestimonialsSection from '@/components/TestimonialsSection';
+
+export default function HomePage() {
+  return (
+    <main>
+      {/* Other sections */}
+      <TestimonialsSection />
+      {/* Other sections */}
+    </main>
+  );
+}
+```
+
+<Note>
+  No props required. Testimonials are configured within the component as static data.
+</Note>
+
+## Testimonial Data Structure
+
+```tsx
+interface TestimonialData {
+  name: string;      // Customer name
+  location: string;  // Location/title (e.g., "Propietario en Las Condes")
+  text: string;      // Testimonial text (supports \n for line breaks)
+  rating: number;    // 1-5 star rating
+}
+
+const testimonials: TestimonialData[] = [
+  {
+    name: 'Ricardo Espinoza',
+    location: 'Propietario en Las Condes',
+    text: 'Necesitaba instalar un aire acondicionado...\nHoy el confort en mi hogar es totalmente distinto.',
+    rating: 5
+  },
+  // ... more testimonials
+];
+```
+
+### Adding New Testimonials
+
+To add testimonials, edit the `testimonials` array in the component:
+
+```tsx
+const testimonials = [
+  {
+    name: 'María González',
+    location: 'Restaurante en Vitacura',
+    text: 'Excelente servicio de mantención.\nSiempre puntuales y profesionales.',
+    rating: 5
+  },
+  // Add more here...
+];
+```
+
+<Tip>
+  Use `\n` in the `text` field to create line breaks. The TestimonialCard component uses `whitespace-pre-line` to render them.
+</Tip>
+
+## Component Architecture
+
+### Mobile Layout (< 768px)
+
+<Steps>
+  <Step title="Duplicate Testimonials">
+    Testimonials array is duplicated for seamless infinite loop:
+    ```tsx
+    const loopTestimonials = 
+      testimonials.length > 1 
+        ? [...testimonials, ...testimonials] 
+        : testimonials;
+    ```
+  </Step>
+  
+  <Step title="Horizontal Scroll Container">
+    Overflow container with hidden scrollbar:
+    ```tsx
+    <div
+      ref={scrollRef}
+      className="flex gap-4 overflow-x-scroll no-scrollbar"
+    >
+    ```
+  </Step>
+  
+  <Step title="Auto-Scroll Animation">
+    RequestAnimationFrame-based smooth scrolling at 0.3px/frame
+  </Step>
+  
+  <Step title="Loop Reset">
+    When scrollLeft reaches halfway (totalWidth/2), reset to start:
+    ```tsx
+    if (container.scrollLeft >= totalWidth) {
+      container.scrollLeft -= totalWidth;
+    }
+    ```
+  </Step>
+</Steps>
+
+### Desktop Layout (≥ 768px)
+
+Static grid with responsive column count:
+
+```tsx
+const cols =
+  testimonials.length === 1
+    ? 'md:grid-cols-1'
+    : testimonials.length === 2
+      ? 'md:grid-cols-2'
+      : 'md:grid-cols-3';
+
+<div className={`hidden md:grid grid-cols-1 ${cols} gap-6`}>
+  {testimonials.map((testimonial, index) => (
+    <TestimonialCard key={index} {...testimonial} />
+  ))}
+</div>
+```
+
+## Animation System
+
+### useEffect Hook
+
+```tsx
+useEffect(() => {
+  const container = scrollRef.current;
+  if (!container || testimonials.length <= 1) return;
+
+  let animationFrameId: number;
+  const speed = 0.3; // Pixels per frame
+
+  const startAnimation = () => {
+    const totalWidth = container.scrollWidth / 2;
+
+    const animate = () => {
+      if (!isPaused) {
+        container.scrollLeft += speed;
+
+        if (container.scrollLeft >= totalWidth) {
+          container.scrollLeft -= totalWidth;
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+  };
+
+  const timeout = setTimeout(startAnimation, 300); // Delay start
+
+  return () => {
+    cancelAnimationFrame(animationFrameId);
+    clearTimeout(timeout);
+  };
+}, [isPaused]);
+```
+
+### Pause on Interaction
+
+```tsx
+const [isPaused, setIsPaused] = useState(false);
+
+<div
+  onMouseEnter={() => setIsPaused(true)}
+  onMouseLeave={() => setIsPaused(false)}
+  onTouchStart={() => setIsPaused(true)}
+  onTouchEnd={() => setIsPaused(false)}
+>
+```
+
+<Accordion title="Why RequestAnimationFrame?">
+  - Smooth 60fps animation
+  - Automatically pauses when tab is inactive
+  - Better performance than setInterval
+  - Synchronized with browser repaint cycle
+</Accordion>
+
+## TestimonialCard Component
+
+### Props Interface
+
+```tsx
+interface TestimonialCardProps {
+  name: string;      // Customer name
+  location: string;  // Location/title
+  text: string;      // Testimonial text
+  rating: number;    // 1-5 stars
+}
+```
+
+### Card Structure
+
+<Tabs>
+  <Tab title="Rating Stars">
+    ```tsx
+    <div className="flex gap-1 mb-4 text-yellow-400">
+      {[...Array(rating)].map((_, i) => (
+        <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921..." />
+        </svg>
+      ))}
+    </div>
+    ```
+    
+    Dynamically renders 1-5 stars based on `rating` prop
+  </Tab>
+  
+  <Tab title="Testimonial Text">
+    ```tsx
+    <p className="whitespace-pre-line text-text-primary text-sm mb-6 leading-relaxed italic">
+      &ldquo;{text}&rdquo;
+    </p>
+    ```
+    
+    - `whitespace-pre-line` preserves line breaks from `\n`
+    - Opening/closing quotation marks
+    - Italic styling
+  </Tab>
+  
+  <Tab title="Customer Info">
+    ```tsx
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+        {name.charAt(0)}
+      </div>
+      <div>
+        <p className="text-sm font-bold">{name}</p>
+        <p className="text-xs text-text-secondary">{location}</p>
+      </div>
+    </div>
+    ```
+    
+    - Avatar with first initial
+    - Name and location
+  </Tab>
+</Tabs>
+
+## Styling Details
+
+### Section Container
+
+```tsx
+<section className="
+  px-4 md:px-10 lg:px-40   // Responsive horizontal padding
+  py-10 md:py-12           // Responsive vertical padding
+  bg-blue-50               // Light blue background
+" id="testimonios">       // Anchor link target
+```
+
+### Mobile Carousel Items
+
+```tsx
+<div className="
+  min-w-[85%]              // Each card is 85% of viewport width
+  cursor-pointer           // Indicates interactivity
+  active:scale-[0.98]      // Subtle press feedback
+  transition               // Smooth transforms
+">
+```
+
+### Desktop Grid Constraints
+
+```tsx
+<div className="w-full max-w-[380px]">
+  <TestimonialCard {...testimonial} />
+</div>
+```
+
+Each card has a maximum width of 380px for optimal readability.
+
+## Responsive Behavior
+
+| Breakpoint | Layout | Interaction | Column Count |
+|------------|--------|-------------|-------------|
+| < 768px    | Horizontal carousel | Auto-scroll + swipe | N/A |
+| ≥ 768px    | Grid | Static | 1-3 (dynamic) |
+
+### Dynamic Column Count Logic
+
+```tsx
+const cols =
+  testimonials.length === 1
+    ? 'md:grid-cols-1'        // Single centered card
+    : testimonials.length === 2
+      ? 'md:grid-cols-2'      // Two columns
+      : 'md:grid-cols-3';     // Three columns (3+ testimonials)
+```
+
+## Performance Optimization
+
+<AccordionGroup>
+  <Accordion title="RequestAnimationFrame">
+    Uses browser-optimized animation API instead of setInterval:
+    - Automatically pauses when tab is inactive
+    - Syncs with display refresh rate (60fps)
+    - Lower CPU usage
+  </Accordion>
+  
+  <Accordion title="Conditional Duplication">
+    Only duplicates testimonials array when > 1 item:
+    ```tsx
+    const loopTestimonials =
+      testimonials.length > 1 
+        ? [...testimonials, ...testimonials] 
+        : testimonials;
+    ```
+  </Accordion>
+  
+  <Accordion title="Early Return">
+    Animation doesn't run if only 1 testimonial:
+    ```tsx
+    if (!container || testimonials.length <= 1) return;
+    ```
+  </Accordion>
+  
+  <Accordion title="Cleanup">
+    Properly cancels animation on unmount:
+    ```tsx
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      clearTimeout(timeout);
+    };
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Customization
+
+### Adjust Scroll Speed
+
+```tsx
+const speed = 0.3; // Default: 0.3px per frame
+
+// Slower (smoother):
+const speed = 0.15;
+
+// Faster:
+const speed = 0.5;
+```
+
+### Change Animation Delay
+
+```tsx
+const timeout = setTimeout(startAnimation, 300); // Default: 300ms
+
+// Start immediately:
+const timeout = setTimeout(startAnimation, 0);
+```
+
+### Modify Card Width (Mobile)
+
+```tsx
+<div className="min-w-[85%]"> {/* Default: 85% */}
+
+// Wider cards:
+<div className="min-w-[95%]">
+
+// Narrower cards (shows more cards):
+<div className="min-w-[75%]">
+```
+
+### Change Background Color
+
+```tsx
+<section className="bg-blue-50"> {/* Default */}
+
+// White background:
+<section className="bg-white">
+
+// Gray background:
+<section className="bg-gray-100">
+```
+
+## Accessibility
+
+<Card title="Keyboard Navigation" icon="keyboard">
+  - Mobile carousel supports touch swipe
+  - Desktop cards are static (no interaction needed)
+  - Section has `id="testimonios"` for anchor links
+</Card>
+
+<Card title="Semantic HTML" icon="code">
+  - Uses `<section>` landmark
+  - Proper heading hierarchy (`<h3>`)
+  - Semantic customer info structure
+</Card>
+
+<Card title="Screen Readers" icon="microphone">
+  - Customer name and location are separate elements
+  - Quotation marks in text
+  - Star ratings are visual (consider adding aria-label)
+</Card>
+
+## Edge Cases
+
+### Single Testimonial
+
+```tsx
+if (testimonials.length === 1) {
+  // No duplication, no animation
+  // Mobile: single static card
+  // Desktop: single centered card
+}
+```
+
+### No Testimonials
+
+Currently not handled. Consider adding:
+
+```tsx
+if (testimonials.length === 0) {
+  return null; // or show placeholder
+}
+```
+
+## Source Locations
+
+<CodeGroup>
+  ```bash Section Component
+  ~/workspace/source/components/TestimonialsSection.tsx
+  ```
+  
+  ```bash Card Component
+  ~/workspace/source/components/TestimonialCard.tsx
+  ```
+</CodeGroup>
+
+## Related Components
+
+- [Service Cards](/components/service-cards) - Similar card layout pattern
+- [Hero Section](/components/hero-section) - Main landing component

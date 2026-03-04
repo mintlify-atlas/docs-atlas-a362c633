@@ -1,80 +1,453 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start Guide
+description: Get started with Polaris Clima in minutes - from cloning to your first deployment
 ---
 
-## Get started in three steps
+## Get Started in 5 Minutes
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+This guide will walk you through setting up Polaris Clima on your local machine, from cloning the repository to making your first changes.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Make sure you have Node.js 20+ and pnpm installed on your system before proceeding.
+</Note>
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js 20+** - [Download Node.js](https://nodejs.org/)
+- **pnpm** - Fast, disk space efficient package manager
+- **MySQL 8.0+** - For contact form data storage
+- **Git** - Version control
+
+<Steps>
+
+### Clone the Repository
+
+First, clone the Polaris Clima repository to your local machine:
+
+```bash
+git clone <repository-url>
+cd polaris-clima
+```
+
+Alternatively, if you're starting from the workspace:
+
+```bash
+cd ~/workspace/source
+```
+
+### Install Dependencies
+
+Polaris Clima uses pnpm as its package manager. Install all dependencies:
+
+```bash
+pnpm install
+```
+
+This will install:
+- Next.js 16.1.1 and React 19
+- Tailwind CSS 4 and PostCSS
+- Framer Motion for animations
+- MySQL2 for database connectivity
+- TypeScript and development tools
+
+<Warning>
+  The project uses pnpm workspaces. Make sure you're running `pnpm install` (not `npm install`) to avoid dependency conflicts.
+</Warning>
+
+### Configure Environment Variables
+
+Create a `.env.local` file in the root directory with your database credentials:
+
+```bash title=".env.local"
+# MySQL Database Configuration
+DB_HOST=localhost
+DB_USER=your_mysql_user
+DB_PASSWORD=your_mysql_password
+DB_NAME=polaris_clima
+```
+
+<Note>
+  These environment variables are only used during development when running API routes. The static export won't include API functionality unless deployed with server-side capabilities.
+</Note>
+
+### Set Up the Database
+
+Create the MySQL database and table for contact form submissions:
+
+```sql
+-- Create the database
+CREATE DATABASE polaris_clima CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE polaris_clima;
+
+-- Create the contactos table
+CREATE TABLE contactos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  apellido VARCHAR(100) NOT NULL,
+  correo VARCHAR(150) NOT NULL,
+  telefono VARCHAR(20) NOT NULL,
+  mensaje TEXT,
+  origen VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_created_at (created_at),
+  INDEX idx_origen (origen)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### Start the Development Server
+
+Launch the Next.js development server:
+
+```bash
+pnpm dev
+```
+
+The server will start on `http://localhost:3000`. You should see output like:
+
+```
+  ▲ Next.js 16.1.1
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Ready in 1.2s
+```
+
+### Verify the Installation
+
+Open your browser and navigate to:
+
+- **Homepage**: http://localhost:3000
+- **Contact Page**: http://localhost:3000/contacto
+- **Location Page**: http://localhost:3000/aire-acondicionado/santiago
+- **Service Page**: http://localhost:3000/servicios/instalacion
+
+You should see the Polaris Clima homepage with:
+- Responsive navigation header
+- Hero section with animations
+- Brand carousel
+- Service cards
+- Contact form
+- Testimonials section
+
+</Steps>
+
+## Project Structure
+
+Once you have the project running, familiarize yourself with the structure:
+
+```
+polaris-clima/
+├── app/
+│   ├── layout.tsx              # Root layout with SEO
+│   ├── page.tsx                # Homepage
+│   ├── globals.css             # Global styles
+│   ├── api/contacto/          # Contact API endpoint
+│   ├── aire-acondicionado/    # Location-based pages
+│   ├── servicios/             # Service pages
+│   └── contacto/              # Contact page
+├── components/
+│   ├── Header.tsx             # Navigation header
+│   ├── Footer.tsx             # Site footer
+│   ├── ContactUs.tsx          # Contact form component
+│   └── ...                    # Other components
+├── lib/
+│   └── db.ts                  # Database connection
+├── hooks/
+│   └── useContactForm.ts      # Form logic hook
+├── public/                    # Static assets
+└── scripts/
+    └── generate-sitemap.ts    # SEO sitemap generator
+```
+
+## Making Your First Changes
+
+### Update the Homepage Hero
+
+Let's customize the main hero section. Open `app/page.tsx`:
+
+```typescript title="app/page.tsx"
+import HeroSection from '@/components/HeroSection';
+import BrandsCarousel from '@/components/BrandsCarousel';
+import ServicesSection from '@/components/ServicesSection';
+// ... other imports
+
+export default function Home() {
+  return (
+    <>
+      <HeroSection />
+      <BrandsCarousel />
+      <ServicesSection />
+      <WhyChooseUsSection />
+      <ProductsCategories />
+      <ContactUs />
+      <TestimonialsSection />
+      <HeroClimatizacion />
+    </>
+  );
+}
+```
+
+The homepage is composed of reusable components. Each section can be edited independently in the `components/` directory.
+
+### Customize the Theme Colors
+
+Edit the Tailwind configuration to match your brand:
+
+```typescript title="tailwind.config.ts"
+const config: Config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#137fec',           // Primary brand color
+        'background-light': '#f6f7f8', // Light background
+        'background-dark': '#101922',  // Dark background
+        'text-primary': '#111418',     // Primary text
+        'text-secondary': '#0ECD61',   // Secondary accent
+      },
+    },
+  },
+};
+```
+
+Change these colors to match your brand identity. The changes will apply across the entire application.
+
+### Add a New Service Page
+
+Create a new service by adding a page in `app/servicios/`:
+
+```bash
+mkdir app/servicios/nuevo-servicio
+touch app/servicios/nuevo-servicio/page.tsx
+```
+
+```typescript title="app/servicios/nuevo-servicio/page.tsx"
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Nuevo Servicio - Polaris Clima',
+  description: 'Descripción del nuevo servicio de climatización',
+};
+
+export default function NuevoServicioPage() {
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-20">
+      <h1 className="text-4xl font-bold text-gray-900 mb-6">
+        Nuevo Servicio
+      </h1>
+      <p className="text-lg text-gray-700">
+        Contenido de tu nuevo servicio...
+      </p>
+    </div>
+  );
+}
+```
+
+Your new service will be available at http://localhost:3000/servicios/nuevo-servicio
+
+### Test the Contact Form
+
+Navigate to http://localhost:3000/contacto and submit a test form:
+
+1. Fill in all required fields (nombre, apellido, email, teléfono)
+2. Add an optional message
+3. Click "ENVIAR"
+
+The form submission flow:
+```typescript title="app/api/contacto/route.ts" {37-51}
+export async function POST(req: Request) {
+  try {
+    // Rate limiting by IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || 'unknown';
+
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: 'Demasiados envíos. Intenta de nuevo en unos minutos.' },
+        { status: 429 }
+      );
+    }
+
+    const body = await req.json();
+    const { nombre, apellido, email, telefono, mensaje, origen } = body;
+
+    // Validation...
+    
+    connection = await getConnection();
+    await connection.execute(
+      `INSERT INTO contactos (nombre, apellido, correo, telefono, mensaje, origen)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [nombre.trim(), apellido.trim(), email.trim().toLowerCase(), 
+       telefono.trim(), mensajeLimpio, origen || 'desconocido']
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error DB:', error);
+    return NextResponse.json({ error: 'Error al guardar' }, { status: 500 });
+  }
+}
+```
+
+The form includes:
+- Email and phone validation
+- Rate limiting (4 requests per 10 minutes per IP)
+- XSS protection and input sanitization
+- MySQL database storage
+
+## Common Development Tasks
+
+### Running Linting
+
+Check code quality with ESLint:
+
+```bash
+pnpm lint
+```
+
+### Building for Production
+
+Generate the static export:
+
+```bash
+pnpm build
+```
+
+This will:
+1. Run the sitemap generator (`scripts/generate-sitemap.ts`)
+2. Build the Next.js application
+3. Export static HTML/CSS/JS to the `out/` directory
+4. Generate all static paths for location pages
+
+### Preview Production Build
+
+Test the production build locally:
+
+```bash
+pnpm build
+pnpm start
+```
+
+<Warning>
+  The `start` command serves the static export. API routes won't work in the static export - they require server-side deployment.
+</Warning>
+
+## Hot Reload & Fast Refresh
+
+Next.js includes Fast Refresh for instant feedback:
+
+```typescript title="app/page.tsx"
+export default function Home() {
+  return (
+    <>
+      <HeroSection />
+      {/* Edit any component - changes appear instantly */}
+      <BrandsCarousel />
+    </>
+  );
+}
+```
+
+When you save a file:
+1. The page updates without losing component state
+2. Only the changed component re-renders
+3. Console logs and errors appear immediately
+
+## Debugging Tips
+
+### Check Database Connection
+
+If contact forms aren't working:
+
+```bash
+# Test MySQL connection
+mysql -u your_mysql_user -p polaris_clima
+
+# Check if table exists
+SHOW TABLES;
+
+# View recent submissions
+SELECT * FROM contactos ORDER BY created_at DESC LIMIT 10;
+```
+
+### View Console Logs
+
+API route logs appear in the terminal where you ran `pnpm dev`:
+
+```bash
+POST /api/contacto 200 in 142ms
+```
+
+Client-side logs appear in the browser console (F12).
+
+### Clear Next.js Cache
+
+If you encounter strange build issues:
+
+```bash
+rm -rf .next
+pnpm dev
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Configure environment variables, SEO settings, and database options
+  </Card>
+  
+  <Card title="Components" icon="puzzle-piece" href="/components">
+    Learn about the component library and how to customize them
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Explore API endpoints and integration options
+  </Card>
+  
+  <Card title="Deployment" icon="cloud" href="/deployment">
+    Deploy your customized platform to production
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Use a different port
+pnpm dev -- -p 3001
+```
+
+### Module Not Found Errors
+
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
+```
+
+### TypeScript Errors
+
+```bash
+# Check TypeScript configuration
+pnpm tsc --noEmit
+```
+
+### Database Connection Failed
+
+Verify your `.env.local` credentials and ensure MySQL is running:
+
+```bash
+# Check MySQL status (macOS)
+brew services list | grep mysql
+
+# Check MySQL status (Linux)
+sudo systemctl status mysql
+```
+
+<Note>
+  For additional help, consult the [Next.js documentation](https://nextjs.org/docs) or review the source code comments in `~/workspace/source/`.
 </Note>

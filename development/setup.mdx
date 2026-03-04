@@ -1,0 +1,242 @@
+---
+title: 'Development Setup'
+description: 'Set up your local development environment for Polaris Clima'
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+- **Node.js** 20.x or higher
+- **pnpm** 8.x or higher (package manager)
+- **MySQL** 8.0 or higher
+- **Git** for version control
+
+<Note>
+Polaris Clima uses pnpm as its package manager. If you don't have it installed, run:
+```bash
+npm install -g pnpm
+```
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone <repository-url>
+    cd polaris-clima
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    pnpm install
+    ```
+    
+    This will install all required packages including:
+    - Next.js 16.1.1
+    - React 19.2.3
+    - MySQL2 for database connectivity
+    - Framer Motion for animations
+    - Tailwind CSS 4 for styling
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create a `.env.local` file in the root directory with your database credentials:
+    
+    ```bash
+    DB_HOST=localhost
+    DB_USER=your_mysql_user
+    DB_PASSWORD=your_mysql_password
+    DB_NAME=polaris_clima
+    NEXT_PUBLIC_API_CONTACTO=/api/contacto
+    ```
+    
+    See [Environment Variables](/development/environment-variables) for detailed configuration.
+  </Step>
+
+  <Step title="Set up the database">
+    Create the MySQL database and required tables:
+    
+    ```sql
+    CREATE DATABASE polaris_clima;
+    USE polaris_clima;
+    
+    CREATE TABLE contactos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nombre VARCHAR(100) NOT NULL,
+      apellido VARCHAR(100) NOT NULL,
+      correo VARCHAR(150) NOT NULL,
+      telefono VARCHAR(20) NOT NULL,
+      mensaje TEXT,
+      origen VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ```
+    
+    See [Database Schema](/development/database-schema) for more details.
+  </Step>
+</Steps>
+
+## Development Workflow
+
+### Starting the Development Server
+
+Run the development server with hot-reload enabled:
+
+```bash
+pnpm dev
+```
+
+The application will be available at `http://localhost:3000`.
+
+### TypeScript Configuration
+
+The project uses strict TypeScript with the following key settings:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
+```
+
+Path aliases allow you to import modules using `@/` prefix:
+
+```typescript
+import { getConnection } from '@/lib/db';
+```
+
+### Linting
+
+Run ESLint to check code quality:
+
+```bash
+pnpm lint
+```
+
+<Warning>
+The project enforces strict ESLint rules. Make sure to fix all linting errors before committing code.
+</Warning>
+
+## Build Process
+
+### Production Build
+
+To create an optimized production build:
+
+```bash
+pnpm build
+```
+
+This command:
+1. Runs the `prebuild` script to generate the sitemap
+2. Compiles TypeScript
+3. Optimizes assets and bundles
+4. Generates static export (configured with `output: 'export'`)
+
+### Build Output
+
+The build creates a static export in the `out/` directory, which can be deployed to any static hosting service.
+
+<Note>
+The Next.js configuration uses `output: 'export'` mode, which means the application is built as a static site. API routes are not supported in this mode for production deployment.
+</Note>
+
+### Starting Production Server
+
+To test the production build locally:
+
+```bash
+pnpm start
+```
+
+## Deployment Considerations
+
+### Static Export
+
+The application is configured for static export:
+
+```typescript title="next.config.ts"
+const nextConfig: NextConfig = {
+  output: 'export',
+  images: {
+    unoptimized: true,
+  },
+};
+```
+
+<Warning>
+With `output: 'export'`, API routes will not work in production. You'll need to deploy the API separately or use a different deployment strategy if server-side functionality is required.
+</Warning>
+
+### Security Headers
+
+The application includes security headers configured in `next.config.ts`:
+
+- `X-Frame-Options: SAMEORIGIN`
+- `X-Content-Type-Options: nosniff`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+### Image Optimization
+
+Images are set to `unoptimized: true` for compatibility with static export. Consider using a CDN for image optimization in production.
+
+### Environment Variables in Production
+
+Ensure all required environment variables are configured in your deployment platform. Public variables prefixed with `NEXT_PUBLIC_` will be embedded in the client bundle.
+
+## Project Structure
+
+```
+polaris-clima/
+├── app/                  # Next.js App Router pages and API routes
+│   └── api/
+│       └── contacto/     # Contact form API endpoint
+├── components/           # React components
+├── lib/                  # Utility functions and database connection
+│   └── db.ts            # MySQL connection helper
+├── pages/               # Additional pages (if any)
+├── scripts/             # Build scripts (sitemap generation)
+├── next.config.ts       # Next.js configuration
+├── tailwind.config.ts   # Tailwind CSS configuration
+├── tsconfig.json        # TypeScript configuration
+└── package.json         # Project dependencies and scripts
+```
+
+## Troubleshooting
+
+### Database Connection Issues
+
+If you encounter database connection errors:
+
+1. Verify MySQL is running: `mysql -u root -p`
+2. Check credentials in `.env.local`
+3. Ensure the database exists
+4. Verify user permissions
+
+### Port Already in Use
+
+If port 3000 is already in use, specify a different port:
+
+```bash
+pnpm dev -- -p 3001
+```
+
+### Module Resolution Errors
+
+If you see import errors, try clearing the Next.js cache:
+
+```bash
+rm -rf .next
+pnpm dev
+```

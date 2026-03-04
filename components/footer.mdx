@@ -1,0 +1,457 @@
+---
+title: 'Footer'
+description: 'Comprehensive site footer with navigation, services links, contact info, social media, and responsive layout'
+icon: 'rectangle-vertical'
+---
+
+## Overview
+
+The `Footer` component provides a complete footer section with navigation links, service listings, contact information, social media integration, and a responsive mobile/desktop layout. Includes smart scroll-to-top behavior for the logo.
+
+<Warning>
+  This is a **client component** (`'use client'`) that uses Next.js routing hooks.
+</Warning>
+
+## Features
+
+- Four-column grid layout (desktop)
+- Responsive mobile layout with bottom logo bar
+- Smart logo click behavior (scroll vs navigate)
+- Social media links (Instagram, WhatsApp)
+- Contact information with icon integration
+- Section anchor links
+- Hover animations on all interactive elements
+
+## Usage
+
+```tsx
+import Footer from '@/components/Footer';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Footer />
+      </body>
+    </html>
+  );
+}
+```
+
+<Note>
+  No props required. All content is configured within the component.
+</Note>
+
+## Component Structure
+
+### Layout Grid
+
+```tsx
+<footer className="bg-white text-gray-900 px-4 md:px-10 lg:px-20 py-6 md:py-10">
+  <div className="max-w-[1400px] mx-auto">
+    {/* Four-column grid */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+      {/* 1. Company Info (hidden on mobile) */}
+      {/* 2. Quick Links */}
+      {/* 3. Services */}
+      {/* 4. Contact */}
+    </div>
+    
+    {/* Bottom bar with social media */}
+  </div>
+</footer>
+```
+
+## Section Breakdown
+
+### 1. Company Info (Desktop Only)
+
+```tsx
+<div className="hidden md:block space-y-4">
+  <Link href="/" onClick={handleLogoClick}>
+    <img
+      src="/logoPolaris.png"
+      alt="Polaris Clima Logo"
+      className="w-60 transition-transform duration-300 group-hover:scale-105"
+    />
+  </Link>
+  <p className="text-gray-900 text-sm leading-relaxed">
+    Líderes en climatización en la Región Metropolitana con más de 10 años de experiencia...
+  </p>
+</div>
+```
+
+**Features:**
+- Logo with hover scale effect
+- Company tagline
+- Hidden on mobile (shows in bottom bar instead)
+
+### 2. Quick Links (Enlaces Rápidos)
+
+<ParamField path="navigation" type="array">
+  Array of `[label, href]` tuples for main navigation:
+  
+  ```tsx
+  [
+    ["Marcas", "/#marcas"],
+    ["Servicios", "/#servicios"],
+    ["Nosotros", "/#nosotros"],
+    ["Climatización", "/#climatizacion"],
+    ["Testimonios", "/#testimonios"],
+    ["Contacto", "/contacto"],
+  ]
+  ```
+  
+  **Layout:**
+  - Mobile: 2-column grid
+  - Desktop: Single column
+</ParamField>
+
+### 3. Services Links (Servicios)
+
+```tsx
+<div className="space-y-2 md:space-y-3">
+  <h4 className="text-sm md:text-base font-bold text-gray-900 mb-2 md:mb-3">
+    Servicios
+  </h4>
+  <nav className="grid grid-cols-1 gap-y-1 md:gap-y-2">
+    <Link href="/servicios/instalacion">Instalación</Link>
+    <Link href="/servicios/mantencion-preventiva">Mantención Preventiva</Link>
+    <Link href="/servicios/mantencion-correctiva">Mantención Correctiva</Link>
+  </nav>
+</div>
+```
+
+### 4. Contact Information (Contacto)
+
+<Tabs>
+  <Tab title="Phone">
+    ```tsx
+    <a href="tel:+56979430510">
+      <span className="inline-flex items-center gap-2 ...">
+        <Phone className="w-4 h-4 md:w-5 md:h-5" />
+        <span className="text-xs md:text-sm">+56 9 7943 0510</span>
+      </span>
+    </a>
+    ```
+    
+    Uses Lucide React `Phone` icon
+  </Tab>
+  
+  <Tab title="Email">
+    ```tsx
+    <a href="mailto:contacto@polaris.cl">
+      <span className="inline-flex items-center gap-2 ...">
+        <Mail className="w-4 h-4 md:w-5 md:h-5" />
+        <span className="text-xs md:text-sm">contacto@polaris.cl</span>
+      </span>
+    </a>
+    ```
+    
+    Uses Lucide React `Mail` icon
+  </Tab>
+  
+  <Tab title="Location">
+    ```tsx
+    <div className="block w-fit">
+      <span className="inline-flex items-center gap-2 ...">
+        <MapPin className="w-4 h-4 md:w-5 md:h-5" />
+        <span className="text-xs md:text-sm">Santiago, RM, Chile</span>
+      </span>
+    </div>
+    ```
+    
+    Uses Lucide React `MapPin` icon (non-clickable)
+  </Tab>
+</Tabs>
+
+## Smart Logo Click Handler
+
+```tsx
+import { useRouter, usePathname } from 'next/navigation';
+
+const router = useRouter();
+const pathname = usePathname();
+
+const handleLogoClick = (e: React.MouseEvent) => {
+  e.preventDefault();
+
+  if (pathname === '/') {
+    // Already on homepage: scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    // Different page: navigate home
+    router.push('/');
+  }
+};
+```
+
+<Card title="Behavior" icon="arrow-pointer">
+  - **On homepage:** Smoothly scrolls to page top
+  - **On other pages:** Navigates to homepage
+  - Prevents default link behavior
+</Card>
+
+## Bottom Bar
+
+### Social Media Section
+
+```tsx
+<div className="border-t border-gray-300 pt-4 md:pt-6">
+  <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
+    
+    {/* Mobile logo */}
+    <div className="md:hidden">
+      <Link href="/" onClick={handleLogoClick}>
+        <img src="/logoPolaris.png" alt="Polaris Clima Logo" className="w-24 h-auto" />
+      </Link>
+    </div>
+    
+    {/* Social media buttons */}
+    <div className="flex items-center gap-3 md:gap-4">
+      <span className="text-xs md:text-sm text-black font-medium">Síguenos:</span>
+      <div className="flex gap-2 md:gap-3">
+        {/* Instagram button */}
+        {/* WhatsApp button */}
+      </div>
+    </div>
+    
+    {/* Copyright */}
+    <p className="text-black text-xs md:text-sm text-center order-first md:order-last">
+      © 2021 Polaris Clima SpA
+    </p>
+  </div>
+</div>
+```
+
+### Social Media Buttons
+
+<Accordion title="Instagram Button">
+  ```tsx
+  <button className="w-10 h-10 flex items-center justify-center group rounded-lg bg-white shadow-md shadow-gray-200 group transition-all duration-300">
+    <Link href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+      <svg className="transition-all duration-300 group-hover:scale-110" width="28" height="28" ...>
+        {/* Instagram gradient SVG */}
+      </svg>
+    </Link>
+  </button>
+  ```
+  
+  **Features:**
+  - Gradient Instagram logo
+  - Hover scale effect (1.0 → 1.1)
+  - White background with shadow
+  - Opens in new tab
+</Accordion>
+
+<Accordion title="WhatsApp Button">
+  ```tsx
+  <button className="w-10 h-10 flex items-center justify-center rounded-lg bg-white shadow-md shadow-gray-200 group transition-all duration-300">
+    <Link 
+      href="https://wa.me/56979430510?text=Hola,%20me%20gustaría%20solicitar%20información..." 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      aria-label="WhatsApp"
+    >
+      <svg className="transition-all duration-300 group-hover:scale-110" width="28" height="28" ...>
+        {/* WhatsApp green SVG */}
+      </svg>
+    </Link>
+  </button>
+  ```
+  
+  **Features:**
+  - Green WhatsApp logo
+  - Pre-filled message in Spanish
+  - Same hover/shadow styling
+  - Opens in new tab
+</Accordion>
+
+## Link Hover Animations
+
+All footer links use consistent hover effects:
+
+```tsx
+className="
+  inline-block              // Required for transform
+  text-black               // Base color
+  text-xs md:text-sm       // Responsive sizing
+  transition-all           // Smooth transitions
+  duration-300             // 300ms duration
+  ease-out                 // Ease-out timing
+  hover:scale-110          // Scale up on hover
+  origin-left              // Scale from left edge
+"
+```
+
+<Tip>
+  The `origin-left` class ensures links scale from their left edge, creating a more natural animation than the default center origin.
+</Tip>
+
+## Responsive Layout
+
+| Element | Mobile (< 768px) | Desktop (≥ 768px) |
+|---------|------------------|-------------------|
+| Company Info | Hidden | Visible (column 1) |
+| Quick Links | 2-column grid | Single column |
+| Services | Single column | Single column |
+| Contact | Single column | Single column |
+| Bottom Logo | Visible (centered) | Hidden |
+| Social Media | Below logo | Right side |
+| Copyright | Top of bottom bar | Right side |
+
+## Section Anchor Links
+
+The footer includes anchor links for smooth scrolling:
+
+```tsx
+<Link href="/#marcas">Marcas</Link>
+<Link href="/#servicios">Servicios</Link>
+<Link href="/#nosotros">Nosotros</Link>
+// etc.
+```
+
+<Note>
+  Target sections must have matching `id` attributes:
+  ```tsx
+  <section id="marcas">...</section>
+  <section id="servicios">...</section>
+  ```
+</Note>
+
+## Styling Details
+
+### Container
+
+```tsx
+className="
+  relative              // Positioning context
+  overflow-hidden       // Clips overflow
+  bg-white              // White background
+  text-gray-900         // Dark gray text
+  px-4 md:px-10 lg:px-20  // Responsive padding
+  py-6 md:py-10         // Responsive vertical padding
+"
+```
+
+### Max Width Constraint
+
+```tsx
+<div className="max-w-[1400px] mx-auto">
+```
+
+Content is constrained to 1400px width and centered.
+
+### Pointer Events
+
+Interactive elements have `pointer-events-auto`:
+
+```tsx
+<nav className="pointer-events-auto ...">
+```
+
+This ensures links are clickable even if parent has `pointer-events-none`.
+
+## Accessibility
+
+<AccordionGroup>
+  <Accordion title="Semantic HTML">
+    - Uses `<footer>` landmark
+    - Proper `<nav>` elements for link groups
+    - Heading hierarchy (`<h4>` for sections)
+  </Accordion>
+  
+  <Accordion title="Icon Accessibility">
+    - Lucide React icons are SVGs with proper viewBox
+    - Social media buttons have `aria-label` attributes
+    - Icons have descriptive alt text where applicable
+  </Accordion>
+  
+  <Accordion title="Link Attributes">
+    - External links use `target="_blank"`
+    - External links have `rel="noopener noreferrer"` for security
+    - Email/phone links use proper protocols (`mailto:`, `tel:`)
+  </Accordion>
+  
+  <Accordion title="Color Contrast">
+    - text-gray-900 on white background (WCAG AAA)
+    - Icon sizes meet minimum touch target (44x44px on mobile)
+  </Accordion>
+</AccordionGroup>
+
+## Customization
+
+### Change Phone Number
+
+```tsx
+<a href="tel:+56979430510"> {/* Update here */}
+  <Phone className="w-4 h-4 md:w-5 md:h-5" />
+  <span>+56 9 7943 0510</span> {/* And here */}
+</a>
+```
+
+### Add Facebook Button
+
+Uncomment the Facebook button code:
+
+```tsx
+<button className="...">
+  <Link href="https://www.facebook.com/yourpage" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+    <svg ...>{/* Facebook SVG */}</svg>
+  </Link>
+</button>
+```
+
+### Modify Service Links
+
+```tsx
+<nav className="...">
+  <Link href="/servicios/new-service">New Service</Link>
+  {/* Add more services here */}
+</nav>
+```
+
+### Change Max Width
+
+```tsx
+<div className="max-w-[1400px] mx-auto"> {/* Default */}
+
+{/* Wider: */}
+<div className="max-w-[1600px] mx-auto">
+
+{/* Full width: */}
+<div className="w-full mx-auto">
+```
+
+## Dependencies
+
+<CodeGroup>
+  ```tsx Next.js
+  import Link from 'next/link';
+  import { useRouter, usePathname } from 'next/navigation';
+  ```
+  
+  ```tsx Lucide React
+  import { Phone, Mail, MapPin } from 'lucide-react';
+  ```
+</CodeGroup>
+
+<Warning>
+  Ensure `lucide-react` is installed:
+  ```bash
+  npm install lucide-react
+  ```
+</Warning>
+
+## Source Location
+
+```bash
+~/workspace/source/components/Footer.tsx
+```
+
+## Related Components
+
+- [WhatsApp Button](/components/whatsapp-button) - Floating action button
+- [Contact Form](/components/contact-form) - Contact page destination
+- [Hero Section](/components/hero-section) - Main landing component

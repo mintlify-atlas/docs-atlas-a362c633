@@ -1,0 +1,513 @@
+---
+title: 'Contact System'
+description: 'Contact form API with rate limiting, validation, and MySQL storage'
+icon: 'envelope'
+---
+
+## Overview
+
+The Polaris Clima contact system is a secure API endpoint that handles contact form submissions with comprehensive validation, rate limiting, and database storage.
+
+**Location**: `app/api/contacto/route.ts`
+
+## Architecture
+
+```
+Client Form → API Route → Validation → Rate Limit → Database
+     ↓            ↓           ↓            ↓           ↓
+ FormContacto  route.ts   Validators   Rate Map    MySQL
+```
+
+## Rate Limiting
+
+Implemented using an in-memory Map to prevent spam and abuse:
+
+<CodeGroup>
+```typescript Configuration
+const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+const RATE_LIMIT_WINDOW = 10 * 60 * 1000; // 10 minutes
+const MAX_REQUESTS = 4; // 4 submissions per window
+```
+
+```typescript Rate Limit Function
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  // Reset window if expired
+  if (!record || now - record.lastReset > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(ip, { count: 1, lastReset: now });
+    return false;
+  }
+
+  // Check if limit exceeded
+  if (record.count >= MAX_REQUESTS) {
+    return true;
+  }
+
+  // Increment count
+  record.count++;
+  return false;
+}
+```
+
+```typescript IP Extraction
+const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  || req.headers.get('x-real-ip')
+  || 'unknown';
+
+if (isRateLimited(ip)) {
+  return NextResponse.json(
+    { error: 'Demasiados envíos. Intenta de nuevo en unos minutos.' },
+    { status: 429 }
+  );
+}
+```
+</CodeGroup>
+
+<Warning>
+**Rate Limit Behavior**
+- Maximum 4 submissions per 10-minute window
+- Tracked by IP address (x-forwarded-for or x-real-ip)
+- Returns HTTP 429 when exceeded
+- Window resets automatically after 10 minutes
+</Warning>
+
+## Validation System
+
+### Email Validation
+
+<CodeGroup>
+```typescript Email Validator
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email) && email.length <= 150;
+}
+```
+
+```typescript Usage
+if (!isValidEmail(email)) {
+  return NextResponse.json(
+    { error: 'El correo electrónico no es válido' },
+    { status: 400 }
+  );
+}
+```
+</CodeGroup>
+
+**Rules**:
+- Must match RFC-compliant email format
+- Maximum length: 150 characters
+- Allows common special characters: `._%+-`
+
+### Phone Validation
+
+<CodeGroup>
+```typescript Phone Validator
+function isValidPhone(telefono: string): boolean {
+  return /^\+?[0-9\s()-]{7,15}$/.test(telefono);
+}
+```
+</CodeGroup>
+
+**Accepts**:
+- Optional `+` prefix for international
+- Numbers, spaces, parentheses, hyphens
+- Length between 7-15 characters
+
+**Examples**: `+56979430510`, `9 7943 0510`, `(9) 7943-0510`
+
+### Field Validation
+
+<Accordion title="Required Fields">
+```typescript
+const { nombre, apellido, email, telefono, mensaje, origen } = body;
+
+if (!nombre || !apellido || !email || !telefono) {
+  return NextResponse.json(
+    { error: 'Campos obligatorios faltantes' },
+    { status: 400 }
+  );
+}
+```
+
+- `nombre` (required)
+- `apellido` (required)
+- `email` (required)
+- `telefono` (required)
+- `mensaje` (optional)
+- `origen` (optional, defaults to 'desconocido')
+</Accordion>
+
+<Accordion title="Length Limits">
+```typescript
+if (nombre.length > 100 || apellido.length > 100 || telefono.length > 20) {
+  return NextResponse.json(
+    { error: 'Datos exceden el largo permitido' },
+    { status: 400 }
+  );
+}
+
+// Mensaje sanitization
+const mensajeLimpio = mensaje ? mensaje.substring(0, 1000) : '';
+```
+
+| Field | Max Length |
+|-------|------------|
+| nombre | 100 |
+| apellido | 100 |
+| email | 150 |
+| telefono | 20 |
+| mensaje | 1000 |
+</Accordion>
+
+## Database Integration
+
+### Connection Setup
+
+**Location**: `lib/db.ts`
+
+<CodeGroup>
+```typescript Database Connection
+import mysql from 'mysql2/promise';
+
+export async function getConnection() {
+  return await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+  });
+}
+```
+
+```env Environment Variables
+DB_HOST=your-mysql-host
+DB_USER=your-mysql-user
+DB_PASSWORD=your-mysql-password
+DB_NAME=your-database-name
+```
+</CodeGroup>
+
+### Data Insertion
+
+<CodeGroup>
+```typescript Insert Query
+connection = await getConnection();
+
+await connection.execute(
+  `INSERT INTO contactos (nombre, apellido, correo, telefono, mensaje, origen)
+   VALUES (?, ?, ?, ?, ?, ?)`,
+  [
+    nombre.trim(),
+    apellido.trim(),
+    email.trim().toLowerCase(),
+    telefono.trim(),
+    mensajeLimpio,
+    origen || 'desconocido'
+  ]
+);
+
+return NextResponse.json({ success: true });
+```
+
+```sql Database Schema
+CREATE TABLE contactos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  apellido VARCHAR(100) NOT NULL,
+  correo VARCHAR(150) NOT NULL,
+  telefono VARCHAR(20) NOT NULL,
+  mensaje TEXT,
+  origen VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+</CodeGroup>
+
+### Data Sanitization
+
+<Steps>
+  <Step title="Trim Whitespace">
+    All text fields are trimmed before insertion
+  </Step>
+  
+  <Step title="Lowercase Email">
+    Email addresses are converted to lowercase
+  </Step>
+  
+  <Step title="Truncate Message">
+    Messages limited to 1000 characters
+  </Step>
+  
+  <Step title="Parameterized Query">
+    Uses prepared statements to prevent SQL injection
+  </Step>
+</Steps>
+
+## Error Handling
+
+<CodeGroup>
+```typescript Try-Catch Block
+export async function POST(req: Request) {
+  let connection;
+
+  try {
+    // Rate limiting
+    // Validation
+    // Database insertion
+    
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Error DB:', error);
+    return NextResponse.json(
+      { error: 'Error al guardar' },
+      { status: 500 }
+    );
+
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+```
+</CodeGroup>
+
+### Response Codes
+
+| Code | Meaning | Response |
+|------|---------|----------|
+| 200 | Success | `{ success: true }` |
+| 400 | Bad Request | Missing/invalid fields |
+| 429 | Too Many Requests | Rate limit exceeded |
+| 500 | Server Error | Database/server failure |
+
+## Frontend Integration
+
+### FormContacto Component
+
+**Location**: `app/aire-acondicionado/[comuna]/FormContacto.tsx`
+
+<CodeGroup>
+```tsx Form Component
+'use client';
+
+import { useContactForm } from '@/hooks/useContactForm';
+
+export default function FormContacto({ comuna }: { comuna: string }) {
+  const { loading, success, errorMessage, handleSubmit, handleChange, fieldProps } =
+    useContactForm(`aire-acondicionado-${comuna.toLowerCase().replace(/\s+/g, '-')}`);
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <InputField placeholder="Nombre*" {...fieldProps('nombre')} />
+      <InputField placeholder="Apellido*" {...fieldProps('apellido')} />
+      <InputField type="email" placeholder="Correo*" {...fieldProps('email')} />
+      <InputField type="tel" placeholder="Teléfono*" {...fieldProps('telefono')} />
+      
+      <textarea
+        name="mensaje"
+        placeholder="Mensaje"
+        value={fieldProps('mensaje').value}
+        onChange={handleChange}
+      />
+      
+      <button type="submit" disabled={loading}>
+        {loading ? 'Enviando...' : 'ENVIAR'}
+      </button>
+    </form>
+  );
+}
+```
+
+```tsx Success/Error Alerts
+{success && (
+  <FormAlert 
+    type="success" 
+    message="¡Gracias por contactarnos! Te responderemos pronto." 
+  />
+)}
+
+{errorMessage && (
+  <FormAlert type="error" message={errorMessage} />
+)}
+```
+</CodeGroup>
+
+### Making API Calls
+
+<CodeGroup>
+```typescript POST Request
+const response = await fetch('/api/contacto', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    nombre: 'Juan',
+    apellido: 'Pérez',
+    email: 'juan@example.com',
+    telefono: '+56979430510',
+    mensaje: 'Consulta sobre instalación',
+    origen: 'aire-acondicionado-providencia'
+  }),
+});
+
+const data = await response.json();
+
+if (response.ok) {
+  // Success
+  console.log('Contact saved:', data.success);
+} else {
+  // Error
+  console.error('Error:', data.error);
+}
+```
+</CodeGroup>
+
+## Security Features
+
+<Card title="Rate Limiting" icon="shield">
+Prevents spam and abuse by limiting submissions per IP address
+</Card>
+
+<Card title="Input Validation" icon="check">
+Comprehensive validation of all fields with length limits and format checks
+</Card>
+
+<Card title="SQL Injection Prevention" icon="database">
+Uses parameterized queries (prepared statements) for all database operations
+</Card>
+
+<Card title="Data Sanitization" icon="broom">
+Trims whitespace, converts email to lowercase, truncates long messages
+</Card>
+
+<Card title="Connection Management" icon="plug">
+Proper connection cleanup in finally block to prevent leaks
+</Card>
+
+## Testing the API
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://polarisclima.cl/api/contacto \
+      -H "Content-Type: application/json" \
+      -d '{
+        "nombre": "Test",
+        "apellido": "User",
+        "email": "test@example.com",
+        "telefono": "+56979430510",
+        "mensaje": "Test message",
+        "origen": "test"
+      }'
+    ```
+  </Tab>
+  
+  <Tab title="JavaScript">
+    ```javascript
+    const testContact = async () => {
+      const response = await fetch('/api/contacto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: 'Test',
+          apellido: 'User',
+          email: 'test@example.com',
+          telefono: '+56979430510',
+          mensaje: 'Test message',
+          origen: 'test'
+        })
+      });
+      
+      return await response.json();
+    };
+    ```
+  </Tab>
+  
+  <Tab title="Postman">
+    **Method**: POST
+    
+    **URL**: `http://localhost:3000/api/contacto`
+    
+    **Headers**:
+    ```
+    Content-Type: application/json
+    ```
+    
+    **Body** (raw JSON):
+    ```json
+    {
+      "nombre": "Test",
+      "apellido": "User",
+      "email": "test@example.com",
+      "telefono": "+56979430510",
+      "mensaje": "Test message",
+      "origen": "test"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Monitoring & Debugging
+
+<Accordion title="Check Rate Limit Status">
+Rate limits are stored in memory. To check current state during development:
+
+```typescript
+// Add temporary logging in route.ts
+console.log('Rate limit map:', Array.from(rateLimitMap.entries()));
+```
+
+Note: Rate limit data is lost on server restart (in-memory storage).
+</Accordion>
+
+<Accordion title="Database Connection Issues">
+Common errors:
+
+```
+Error DB: Error: connect ECONNREFUSED
+```
+
+Check:
+1. Environment variables are set correctly
+2. MySQL server is running
+3. Database credentials are valid
+4. Database name exists
+5. Network allows connection to DB host
+</Accordion>
+
+<Accordion title="Validation Failures">
+Test each validator independently:
+
+```typescript
+// Test email validator
+console.log(isValidEmail('test@example.com')); // true
+console.log(isValidEmail('invalid')); // false
+
+// Test phone validator
+console.log(isValidPhone('+56979430510')); // true
+console.log(isValidPhone('abc')); // false
+```
+</Accordion>
+
+## Future Improvements
+
+<CardGroup cols={2}>
+  <Card title="Redis Rate Limiting" icon="gauge">
+    Move rate limiting to Redis for scalability across multiple server instances
+  </Card>
+  
+  <Card title="Email Notifications" icon="bell">
+    Send email notifications to admin when new contacts are received
+  </Card>
+  
+  <Card title="reCAPTCHA" icon="robot">
+    Add Google reCAPTCHA to prevent bot submissions
+  </Card>
+  
+  <Card title="Analytics Tracking" icon="chart-line">
+    Track form submissions and conversion rates by origin
+  </Card>
+</CardGroup>

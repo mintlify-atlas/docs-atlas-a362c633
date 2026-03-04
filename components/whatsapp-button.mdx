@@ -1,0 +1,554 @@
+---
+title: 'WhatsApp Button'
+description: 'Fixed floating WhatsApp button with pulse animation, hover tooltip, and dynamic message customization'
+icon: 'whatsapp'
+---
+
+## Overview
+
+The `WhatsAppButton` component is a fixed-position floating action button that provides direct WhatsApp contact functionality. Features include pulse animation, hover tooltip, customizable location-based messaging, and smooth hover effects.
+
+<Warning>
+  This is a **client component** (`'use client'`) for use in client-side contexts.
+</Warning>
+
+## Features
+
+- Fixed bottom-right positioning
+- Continuous pulse animation (CSS)
+- Hover tooltip with message preview
+- Optional location-based message customization
+- WhatsApp deep link integration
+- Smooth scale and shadow effects
+- High z-index for persistent visibility
+
+## Props
+
+```tsx
+interface Props {
+  comuna?: string;  // Optional: Municipality/location name for message customization
+}
+```
+
+<ParamField path="comuna" type="string" required={false}>
+  Optional location identifier to customize the WhatsApp message.
+  
+  **Example:** `"Las Condes"`, `"Providencia"`, `"Vitacura"`
+  
+  When provided, the message becomes:
+  ```
+  Hola, estoy interesado en instalar aire acondicionado en {comuna}. ¿Podrían orientarme?
+  ```
+  
+  When omitted, uses generic message:
+  ```
+  Hola, estoy interesado en instalar aire acondicionado. ¿Podrían orientarme?
+  ```
+</ParamField>
+
+## Usage
+
+### Basic (No Location)
+
+```tsx
+import WhatsAppButton from '@/components/WhatsAppButton';
+
+export default function Layout({ children }) {
+  return (
+    <>
+      {children}
+      <WhatsAppButton />
+    </>
+  );
+}
+```
+
+### With Location (Dynamic Message)
+
+```tsx
+import WhatsAppButton from '@/components/WhatsAppButton';
+
+export default function ComunaPage() {
+  const comuna = "Las Condes";
+  
+  return (
+    <main>
+      <h1>Servicios en {comuna}</h1>
+      {/* Page content */}
+      <WhatsAppButton comuna={comuna} />
+    </main>
+  );
+}
+```
+
+### Multiple Pages with Different Locations
+
+```tsx
+// app/comunas/[slug]/page.tsx
+import WhatsAppButton from '@/components/WhatsAppButton';
+
+interface Props {
+  params: { slug: string };
+}
+
+export default function ComunaPage({ params }: Props) {
+  // Map slug to proper name
+  const comunaNames: Record<string, string> = {
+    'las-condes': 'Las Condes',
+    'providencia': 'Providencia',
+    'vitacura': 'Vitacura',
+  };
+  
+  const comunaName = comunaNames[params.slug];
+  
+  return (
+    <main>
+      <WhatsAppButton comuna={comunaName} />
+    </main>
+  );
+}
+```
+
+## Message Generation Logic
+
+```tsx
+const phoneNumber = '56979430510'; // Chile country code + number
+
+const message = comuna
+  ? `Hola, estoy interesado en instalar aire acondicionado en ${comuna}. ¿Podrían orientarme?`
+  : 'Hola, estoy interesado en instalar aire acondicionado. ¿Podrían orientarme?';
+
+const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+```
+
+<Accordion title="URL Structure Breakdown">
+  - **Base URL:** `https://wa.me/`
+  - **Phone Number:** `56979430510` (Chile +56, mobile 9 7943 0510)
+  - **Query Parameter:** `?text=` + URL-encoded message
+  - **Example:** `https://wa.me/56979430510?text=Hola%2C%20estoy%20interesado...`
+</Accordion>
+
+## Component Structure
+
+### Fixed Button Container
+
+```tsx
+<Link
+  href={whatsappUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="
+    fixed                  // Fixed positioning
+    bottom-10 right-8      // Position from edges
+    z-50                   // High z-index (above most content)
+    flex                   // Flexbox for centering
+    h-20 w-20              // 80x80px button
+    items-center 
+    justify-center
+    rounded-full           // Circular button
+    bg-[#25D366]           // WhatsApp green
+    text-white
+    shadow-2xl             // Strong shadow
+    transition-all 
+    duration-300
+    hover:scale-110        // Scale up on hover
+    hover:shadow-[0_0_20px_rgba(37,211,102,0.5)]  // Glowing effect
+    group                  // Enable group-hover utilities
+  "
+  aria-label="Contactar por WhatsApp"
+>
+```
+
+### WhatsApp Icon SVG
+
+```tsx
+<svg
+  className="h-8 w-8 animate-scale-pulse"
+  fill="currentColor"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path d="M17.472 14.382c-.297-.149-1.758-.867..." />
+</svg>
+```
+
+<Note>
+  The `animate-scale-pulse` class creates a continuous pulsing effect. This must be defined in your Tailwind config or global CSS.
+</Note>
+
+### Hover Tooltip
+
+```tsx
+<span className="
+  absolute 
+  right-24              // Positioned to left of button
+  top-1/2 
+  -translate-y-1/2      // Vertically centered
+  whitespace-nowrap     // Prevents text wrapping
+  rounded-lg 
+  bg-gray-900 
+  px-3 py-2 
+  text-sm 
+  font-medium 
+  text-white 
+  opacity-0             // Hidden by default
+  shadow-lg 
+  transition-opacity 
+  group-hover:opacity-100  // Show on button hover
+  pointer-events-none   // Doesn't interfere with button click
+">
+  ¡Contáctanos!
+</span>
+```
+
+## Styling Details
+
+### Fixed Positioning
+
+```tsx
+fixed          // Removed from document flow
+bottom-10      // 40px from bottom
+right-8        // 32px from right
+z-50           // Stack order (very high)
+```
+
+**Position values:**
+- `bottom-10` = 2.5rem = 40px
+- `right-8` = 2rem = 32px
+- `z-50` = z-index: 50
+
+### WhatsApp Brand Color
+
+```tsx
+bg-[#25D366]  // Official WhatsApp green
+```
+
+<Tip>
+  Using the exact WhatsApp brand color (#25D366) ensures brand recognition and consistency.
+</Tip>
+
+### Hover Effects
+
+<Tabs>
+  <Tab title="Scale Effect">
+    ```tsx
+    hover:scale-110
+    transition-all duration-300
+    ```
+    
+    Button grows to 110% size on hover over 300ms
+  </Tab>
+  
+  <Tab title="Glow Effect">
+    ```tsx
+    shadow-2xl  // Base shadow
+    hover:shadow-[0_0_20px_rgba(37,211,102,0.5)]  // Green glow on hover
+    ```
+    
+    Creates a glowing aura around the button
+  </Tab>
+  
+  <Tab title="Tooltip">
+    ```tsx
+    opacity-0
+    group-hover:opacity-100
+    transition-opacity
+    ```
+    
+    Tooltip fades in when hovering over button
+  </Tab>
+</Tabs>
+
+## Animation Setup
+
+The pulse animation requires custom Tailwind configuration:
+
+### tailwind.config.ts
+
+```tsx
+module.exports = {
+  theme: {
+    extend: {
+      animation: {
+        'scale-pulse': 'scalePulse 2s ease-in-out infinite',
+      },
+      keyframes: {
+        scalePulse: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.05)' },
+        },
+      },
+    },
+  },
+};
+```
+
+### Alternative: Global CSS
+
+If you prefer not to modify Tailwind config:
+
+```css
+/* globals.css */
+@keyframes scalePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-scale-pulse {
+  animation: scalePulse 2s ease-in-out infinite;
+}
+```
+
+<Warning>
+  Without this animation definition, the icon won't pulse. The component will still function but with reduced visual appeal.
+</Warning>
+
+## Responsive Behavior
+
+The button uses fixed pixel values, not responsive units:
+
+| Screen Size | Position | Size |
+|-------------|----------|------|
+| All screens | bottom: 40px, right: 32px | 80x80px |
+
+<Tip>
+  For improved mobile UX, consider using responsive classes:
+  
+  ```tsx
+  className="
+    bottom-6 right-6       // Smaller spacing on mobile
+    md:bottom-10 md:right-8  // Original spacing on desktop
+    h-16 w-16              // Smaller button on mobile
+    md:h-20 md:w-20        // Original size on desktop
+  "
+  ```
+</Tip>
+
+## Accessibility
+
+<AccordionGroup>
+  <Accordion title="ARIA Label">
+    ```tsx
+    aria-label="Contactar por WhatsApp"
+    ```
+    
+    Provides screen reader description of button purpose
+  </Accordion>
+  
+  <Accordion title="Link Attributes">
+    ```tsx
+    target="_blank"              // Opens in new tab
+    rel="noopener noreferrer"    // Security best practice
+    ```
+    
+    Prevents security vulnerabilities when opening external links
+  </Accordion>
+  
+  <Accordion title="Tooltip Behavior">
+    ```tsx
+    pointer-events-none  // Tooltip doesn't interfere with clicks
+    ```
+    
+    Ensures tooltip doesn't block button interaction
+  </Accordion>
+  
+  <Accordion title="Color Contrast">
+    - White icon on #25D366 background (WCAG AA compliant)
+    - White text on gray-900 tooltip (WCAG AAA compliant)
+  </Accordion>
+</AccordionGroup>
+
+## Z-Index Considerations
+
+```tsx
+z-50  // Very high z-index
+```
+
+**Common z-index hierarchy:**
+- Modals: z-50 to z-60
+- Fixed nav/headers: z-40
+- Sticky elements: z-30
+- WhatsApp button: z-50 (same as modals)
+
+<Warning>
+  If your app has modals or overlays with z-50 or higher, the WhatsApp button may appear above them. Consider using z-40 or adjusting modal z-index.
+</Warning>
+
+## Phone Number Configuration
+
+The phone number is hardcoded in the component:
+
+```tsx
+const phoneNumber = '56979430510';
+```
+
+### To Change Phone Number:
+
+<Steps>
+  <Step title="Edit Component">
+    Update the `phoneNumber` constant in `WhatsAppButton.tsx`
+  </Step>
+  
+  <Step title="Format">
+    Use international format without spaces or special characters:
+    - Chile: `56979430510` (+56 9 7943 0510)
+    - USA: `15551234567` (+1 555-123-4567)
+    - Spain: `34612345678` (+34 612 34 56 78)
+  </Step>
+  
+  <Step title="Test">
+    Test the WhatsApp deep link in a browser to ensure it works
+  </Step>
+</Steps>
+
+<Tip>
+  For multi-tenant apps, consider making `phoneNumber` a prop or reading from environment variables.
+</Tip>
+
+## Advanced Customization
+
+### Environment Variable Approach
+
+```tsx
+interface Props {
+  comuna?: string;
+  phoneNumber?: string; // Add optional override
+}
+
+export default function WhatsAppButton({ 
+  comuna, 
+  phoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '56979430510' 
+}: Props) {
+  // ... rest of component
+}
+```
+
+### Custom Message Template
+
+```tsx
+interface Props {
+  comuna?: string;
+  customMessage?: string; // Allow fully custom message
+}
+
+export default function WhatsAppButton({ comuna, customMessage }: Props) {
+  const defaultMessage = comuna
+    ? `Hola, estoy interesado en instalar aire acondicionado en ${comuna}. ¿Podrían orientarme?`
+    : 'Hola, estoy interesado en instalar aire acondicionado. ¿Podrían orientarme?';
+  
+  const message = customMessage || defaultMessage;
+  // ...
+}
+```
+
+### Change Tooltip Text
+
+```tsx
+<span className="...">
+  ¡Contáctanos!  {/* Change this text */}
+</span>
+
+// Or make it dynamic:
+interface Props {
+  tooltipText?: string;
+}
+
+export default function WhatsAppButton({ 
+  tooltipText = '¡Contáctanos!' 
+}: Props) {
+  return (
+    <Link ...>
+      {/* ... */}
+      <span className="...">
+        {tooltipText}
+      </span>
+    </Link>
+  );
+}
+```
+
+## Performance Considerations
+
+<Card title="CSS Animations" icon="bolt">
+  - Pulse animation uses CSS keyframes (GPU-accelerated)
+  - No JavaScript animation loops
+  - Minimal performance impact
+</Card>
+
+<Card title="Fixed Positioning" icon="layer-group">
+  - Fixed elements are outside document flow
+  - Doesn't cause layout shifts
+  - No reflow on scroll
+</Card>
+
+<Card title="SVG Icon" icon="icons">
+  - Inline SVG (no external request)
+  - Scales perfectly at any size
+  - Minimal file size (~500 bytes)
+</Card>
+
+## Testing Checklist
+
+- [ ] Button appears in bottom-right corner
+- [ ] Clicking opens WhatsApp (web or app)
+- [ ] Message is pre-filled correctly
+- [ ] Tooltip appears on hover
+- [ ] Button scales on hover
+- [ ] Pulse animation is visible
+- [ ] Works on mobile devices
+- [ ] Opens correct phone number
+- [ ] `comuna` prop modifies message
+- [ ] Works across different pages
+
+## Source Location
+
+```bash
+~/workspace/source/components/WhatsAppButton.tsx
+```
+
+## Related Components
+
+- [Hero Section](/components/hero-section) - Includes WhatsApp CTA button
+- [Footer](/components/footer) - Includes WhatsApp social link
+- [Contact Form](/components/contact-form) - Alternative contact method
+
+## Example Implementation
+
+Full example with all features:
+
+```tsx
+// app/servicios/[comuna]/page.tsx
+import WhatsAppButton from '@/components/WhatsAppButton';
+
+interface Props {
+  params: { comuna: string };
+}
+
+export default function ServiciosComunaPage({ params }: Props) {
+  const comunaName = params.comuna
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+  
+  return (
+    <main>
+      <h1>Servicios en {comunaName}</h1>
+      
+      <section>
+        {/* Page content */}
+      </section>
+      
+      {/* WhatsApp button with location */}
+      <WhatsAppButton comuna={comunaName} />
+    </main>
+  );
+}
+
+// Example URLs:
+// /servicios/las-condes → "Hola, estoy interesado... en Las Condes"
+// /servicios/providencia → "Hola, estoy interesado... en Providencia"
+```

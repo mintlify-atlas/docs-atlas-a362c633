@@ -1,0 +1,469 @@
+---
+title: 'Contact Form'
+description: 'Client-side contact form with validation, form state management, and API integration using custom React hook'
+icon: 'envelope'
+---
+
+## Overview
+
+The `ContactSection` component provides a comprehensive contact form with real-time validation, error handling, and success feedback. It integrates with a custom `useContactForm` hook for state management and includes a decorative image section.
+
+<Warning>
+  This is a **client component** (`'use client'`) and cannot be used in server components or during SSR.
+</Warning>
+
+## Component Features
+
+- Real-time field validation with error messages
+- Loading states during form submission
+- Success/error feedback alerts
+- Two-column responsive layout (form + content)
+- Integration with backend API
+- Source tracking (page origin)
+
+## Usage
+
+```tsx
+import ContactSection from '@/components/ContactUs';
+
+export default function ContactPage() {
+  return (
+    <main>
+      <ContactSection />
+    </main>
+  );
+}
+```
+
+<Note>
+  The component is self-contained with no required props. Form behavior is configured via the `useContactForm` hook.
+</Note>
+
+## Component Structure
+
+### Layout
+
+Two-column grid layout:
+
+```tsx
+<section className="w-full bg-[#e9e9e9] py-20">
+  <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-start px-6">
+    {/* Left: Form */}
+    <div>...</div>
+    
+    {/* Right: Image & Content */}
+    <div>...</div>
+  </div>
+</section>
+```
+
+### Form Fields
+
+The form includes 5 fields:
+
+<ParamField path="nombre" type="text" required>
+  First name field
+  
+  **Validation:**
+  - Required field
+  - Letters only (Spanish characters supported)
+  - Regex: `/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/`
+</ParamField>
+
+<ParamField path="apellido" type="text" required>
+  Last name field
+  
+  **Validation:**
+  - Required field
+  - Letters only (Spanish characters supported)
+  - Regex: `/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/`
+</ParamField>
+
+<ParamField path="email" type="email" required>
+  Email address field
+  
+  **Validation:**
+  - Required field
+  - Valid email format
+  - Regex: `/\S+@\S+\.\S+/`
+</ParamField>
+
+<ParamField path="telefono" type="tel" required>
+  Phone number field
+  
+  **Validation:**
+  - Required field
+  - 7-15 characters
+  - Allows: digits, spaces, parentheses, hyphens, plus sign
+  - Regex: `/^\+?[0-9\s()-]{7,15}$/`
+</ParamField>
+
+<ParamField path="mensaje" type="textarea" required={false}>
+  Optional message field
+  
+  **Validation:** None (optional field)
+  
+  **Rows:** 4
+</ParamField>
+
+## useContactForm Hook
+
+The component uses a custom hook for form state management:
+
+### Hook Signature
+
+```tsx
+import { useContactForm } from '@/hooks/useContactForm';
+
+const {
+  loading,        // boolean: Form submission in progress
+  success,        // boolean: Form submitted successfully
+  errorMessage,   // string: Error message to display
+  handleSubmit,   // (e: FormEvent) => Promise<void>
+  handleChange,   // (e: ChangeEvent) => void
+  fieldProps      // (name: string) => FieldProps
+} = useContactForm('pagina-principal'); // origen param
+```
+
+### Hook Parameters
+
+<ParamField path="origen" type="string" required>
+  Source page identifier for tracking form submissions.
+  
+  **Examples:**
+  - `'pagina-principal'` - Homepage
+  - `'servicios'` - Services page
+  - `'contacto'` - Dedicated contact page
+  
+  This value is sent to the API for analytics.
+</ParamField>
+
+### Hook Return Values
+
+<Tabs>
+  <Tab title="State">
+    ```tsx
+    loading: boolean      // True during API call
+    success: boolean      // True after successful submission
+    errorMessage: string  // Error message (empty if no error)
+    ```
+  </Tab>
+  
+  <Tab title="Handlers">
+    ```tsx
+    handleSubmit: (e: FormEvent) => Promise<void>
+    // Validates form, calls API, handles response
+    
+    handleChange: (e: ChangeEvent) => void
+    // Updates form data and clears errors
+    
+    handleBlur: (e: FocusEvent) => void
+    // Validates field on blur
+    ```
+  </Tab>
+  
+  <Tab title="Field Props">
+    ```tsx
+    fieldProps(name: keyof FormData) => {
+      name: string
+      value: string
+      error: string
+      onChange: (e) => void
+      onBlur: (e) => void
+    }
+    
+    // Usage:
+    <InputField {...fieldProps('nombre')} placeholder="Su nombre*" />
+    ```
+  </Tab>
+</Tabs>
+
+## Form Validation
+
+Validation occurs in two scenarios:
+
+<Steps>
+  <Step title="On Blur">
+    When a user leaves a field (onBlur event), the field is validated immediately.
+  </Step>
+  
+  <Step title="On Submit">
+    All fields are validated before API call. Submission blocked if any errors exist.
+  </Step>
+</Steps>
+
+### Validation Rules
+
+```tsx
+function validateField(name: string, value: string): string {
+  switch (name) {
+    case 'nombre':
+    case 'apellido':
+      if (!value.trim()) return `El ${name} es obligatorio`;
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+        return `El ${name} solo puede contener letras`;
+      return '';
+    
+    case 'email':
+      if (!value.trim()) return 'El correo es obligatorio';
+      if (!/\S+@\S+\.\S+/.test(value)) return 'El correo no es válido';
+      return '';
+    
+    case 'telefono':
+      if (!value.trim()) return 'El teléfono es obligatorio';
+      if (!/^\+?[0-9\s()-]{7,15}$/.test(value)) return 'El teléfono no es válido';
+      return '';
+    
+    default:
+      return '';
+  }
+}
+```
+
+## API Integration
+
+### Endpoint Configuration
+
+```tsx
+const API_URL = process.env.NEXT_PUBLIC_API_CONTACTO || '/api/contacto';
+```
+
+<ParamField path="NEXT_PUBLIC_API_CONTACTO" type="string" default="/api/contacto">
+  Environment variable for API endpoint. Set in `.env.local`:
+  
+  ```bash
+  NEXT_PUBLIC_API_CONTACTO=https://api.polarisclima.cl/contacto
+  ```
+</ParamField>
+
+### Request Format
+
+```tsx
+POST /api/contacto
+Content-Type: application/json
+
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "email": "juan@example.com",
+  "telefono": "+56 9 1234 5678",
+  "mensaje": "Consulta sobre instalación",
+  "origen": "pagina-principal"
+}
+```
+
+### Response Handling
+
+<CodeGroup>
+  ```json Success (200)
+  {
+    "success": true
+  }
+  ```
+  
+  ```json Rate Limited (429)
+  {
+    "error": "Too many requests"
+  }
+  // Displays: "Demasiados envíos. Intenta de nuevo en unos minutos."
+  ```
+  
+  ```json Validation Error (400)
+  {
+    "success": false,
+    "error": "Invalid email format"
+  }
+  // Displays: "Datos inválidos. Revisa el formulario."
+  ```
+  
+  ```json Server Error (500)
+  {
+    "error": "Internal server error"
+  }
+  // Displays: "Error del servidor. Intenta más tarde."
+  ```
+</CodeGroup>
+
+## Alert Components
+
+The form uses two alert components:
+
+### Success Alert
+
+```tsx
+{success && (
+  <FormAlert 
+    type="success" 
+    message="¡Gracias por contactarnos! Te responderemos pronto." 
+  />
+)}
+```
+
+- Green background with checkmark icon
+- Auto-dismisses after 5 seconds
+- Form fields are cleared
+
+### Error Alert
+
+```tsx
+{errorMessage && (
+  <FormAlert 
+    type="error" 
+    message={errorMessage} 
+  />
+)}
+```
+
+- Red background with X icon
+- Remains until user interacts with form
+- Specific error messages based on failure type
+
+## Supporting Components
+
+### InputField Component
+
+```tsx
+interface InputFieldProps {
+  name: string;
+  value: string;
+  error?: string;
+  type?: string;
+  placeholder: string;
+  required?: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
+}
+
+<InputField 
+  placeholder="Su nombre*" 
+  {...fieldProps('nombre')} 
+/>
+```
+
+**Features:**
+- Red border when error exists
+- Error message display below input
+- White background with shadow
+- Required field indicator in placeholder
+
+### FormAlert Component
+
+```tsx
+interface FormAlertProps {
+  type: 'success' | 'error';
+  message: string;
+}
+
+<FormAlert type="success" message="¡Gracias por contactarnos!" />
+```
+
+**Features:**
+- Animated fade-in
+- Icon with scale animation
+- Color-coded backgrounds
+- Responsive padding
+
+## Responsive Layout
+
+<Tabs>
+  <Tab title="Mobile (< 768px)">
+    - Single column layout
+    - Form appears first
+    - Full-width inputs
+    - Image section below form
+  </Tab>
+  
+  <Tab title="Desktop (≥ 768px)">
+    - Two-column grid (50/50)
+    - Form on left
+    - Image + content on right
+    - 10-unit gap between columns
+  </Tab>
+</Tabs>
+
+## Submit Button States
+
+```tsx
+<button
+  type="submit"
+  disabled={loading}
+  className={`
+    bg-indigo-600 text-white px-6 py-2 rounded shadow-md transition
+    w-full md:w-auto
+    ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'}
+  `}
+>
+  {loading ? 'Enviando...' : 'ENVIAR'}
+</button>
+```
+
+<Accordion title="Button States">
+  - **Idle**: Blue background, full opacity, hover effect enabled
+  - **Loading**: Same blue, 50% opacity, cursor disabled, text changes to "Enviando..."
+  - **Disabled**: Can't submit if validation fails or during loading
+</Accordion>
+
+## Customization
+
+### Change Origin Tracking
+
+```tsx
+const { ... } = useContactForm('custom-page-name');
+```
+
+### Modify Success Message
+
+```tsx
+{success && (
+  <FormAlert 
+    type="success" 
+    message="Custom success message here!" 
+  />
+)}
+```
+
+### Add Additional Fields
+
+To add a new field:
+
+1. Update `FormData` type in hook:
+   ```tsx
+   type FormData = {
+     nombre: string;
+     apellido: string;
+     email: string;
+     telefono: string;
+     mensaje: string;
+     newField: string; // Add here
+   };
+   ```
+
+2. Add validation in `validateField()`
+
+3. Add field to form:
+   ```tsx
+   <InputField placeholder="New Field*" {...fieldProps('newField')} />
+   ```
+
+## Source Locations
+
+<CodeGroup>
+  ```bash Component
+  ~/workspace/source/components/ContactUs.tsx
+  ```
+  
+  ```bash Hook
+  ~/workspace/source/hooks/useContactForm.ts
+  ```
+  
+  ```bash Sub-components
+  ~/workspace/source/components/InputField.tsx
+  ~/workspace/source/components/FormAlert.tsx
+  ```
+</CodeGroup>
+
+## Related Components
+
+- [WhatsApp Button](/components/whatsapp-button) - Alternative contact method
+- [Hero Section](/components/hero-section) - Main landing component
+- [Contact System API](/api/contact) - Backend API endpoint

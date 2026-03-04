@@ -1,0 +1,211 @@
+---
+title: 'Contact Form API'
+description: 'Submit contact form inquiries through the API'
+---
+
+## POST /api/contacto
+
+Submit a contact form with customer information. This endpoint stores contact inquiries in the database and includes built-in rate limiting to prevent abuse.
+
+### Authentication
+
+No authentication required.
+
+### Rate Limiting
+
+This endpoint implements IP-based rate limiting:
+- **Limit**: 4 requests per IP address
+- **Window**: 10 minutes
+- **Behavior**: Returns 429 status when limit exceeded
+
+Rate limits are tracked in-memory and reset after the time window expires.
+
+### Request Body
+
+<ParamField body="nombre" type="string" required>
+  First name of the contact. Maximum 100 characters.
+</ParamField>
+
+<ParamField body="apellido" type="string" required>
+  Last name of the contact. Maximum 100 characters.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Email address of the contact. Must be a valid email format. Maximum 150 characters.
+  
+  **Validation**: Must match pattern `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+</ParamField>
+
+<ParamField body="telefono" type="string" required>
+  Phone number of the contact. Maximum 20 characters.
+  
+  **Validation**: Must match pattern `^\+?[0-9\s()-]{7,15}$` (allows international format with +, spaces, parentheses, and hyphens)
+</ParamField>
+
+<ParamField body="mensaje" type="string" optional>
+  Message or inquiry from the contact. Maximum 1000 characters (automatically truncated if longer).
+</ParamField>
+
+<ParamField body="origen" type="string" optional>
+  Source or origin of the contact form submission (e.g., "website", "landing-page"). Defaults to "desconocido" if not provided.
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the contact form was successfully submitted and stored.
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong (only present in error responses).
+</ResponseField>
+
+### Status Codes
+
+- **200**: Contact form successfully submitted
+- **400**: Validation error (missing required fields, invalid format, or data exceeds maximum length)
+- **429**: Rate limit exceeded (too many requests from the same IP)
+- **500**: Server error (database or internal error)
+
+## Examples
+
+### cURL Request
+
+```bash
+curl -X POST https://polarisclima.com/api/contacto \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Juan",
+    "apellido": "Pérez",
+    "email": "juan.perez@example.com",
+    "telefono": "+56912345678",
+    "mensaje": "Me gustaría obtener más información sobre sus servicios de instalación.",
+    "origen": "website"
+  }'
+```
+
+### JavaScript (fetch)
+
+```javascript
+const response = await fetch('https://polarisclima.com/api/contacto', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    nombre: 'Juan',
+    apellido: 'Pérez',
+    email: 'juan.perez@example.com',
+    telefono: '+56912345678',
+    mensaje: 'Me gustaría obtener más información sobre sus servicios de instalación.',
+    origen: 'website'
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.post(
+    'https://polarisclima.com/api/contacto',
+    json={
+        'nombre': 'Juan',
+        'apellido': 'Pérez',
+        'email': 'juan.perez@example.com',
+        'telefono': '+56912345678',
+        'mensaje': 'Me gustaría obtener más información sobre sus servicios de instalación.',
+        'origen': 'website'
+    }
+)
+
+print(response.json())
+```
+
+## Response Examples
+
+<Accordion title="Success Response (200)">
+```json
+{
+  "success": true
+}
+```
+</Accordion>
+
+<Accordion title="Missing Required Fields (400)">
+```json
+{
+  "error": "Campos obligatorios faltantes"
+}
+```
+</Accordion>
+
+<Accordion title="Invalid Email Format (400)">
+```json
+{
+  "error": "El correo electrónico no es válido"
+}
+```
+</Accordion>
+
+<Accordion title="Invalid Phone Format (400)">
+```json
+{
+  "error": "El teléfono no es válido"
+}
+```
+</Accordion>
+
+<Accordion title="Data Exceeds Maximum Length (400)">
+```json
+{
+  "error": "Datos exceden el largo permitido"
+}
+```
+</Accordion>
+
+<Accordion title="Rate Limit Exceeded (429)">
+```json
+{
+  "error": "Demasiados envíos. Intenta de nuevo en unos minutos."
+}
+```
+</Accordion>
+
+<Accordion title="Server Error (500)">
+```json
+{
+  "error": "Error al guardar"
+}
+```
+</Accordion>
+
+## Validation Rules
+
+### Field Length Limits
+
+| Field | Maximum Length | Notes |
+|-------|---------------|-------|
+| `nombre` | 100 characters | Trimmed before storage |
+| `apellido` | 100 characters | Trimmed before storage |
+| `email` | 150 characters | Trimmed and converted to lowercase |
+| `telefono` | 20 characters | Trimmed before storage |
+| `mensaje` | 1000 characters | Automatically truncated if longer |
+
+### Format Requirements
+
+- **Email**: Must contain @ symbol and valid domain with TLD
+- **Phone**: Must be 7-15 characters, can include +, spaces, parentheses, and hyphens
+- All required fields are trimmed of leading/trailing whitespace before storage
+
+## Implementation Notes
+
+- Email addresses are automatically converted to lowercase before storage
+- Messages longer than 1000 characters are automatically truncated
+- The `origen` field defaults to "desconocido" if not provided
+- Rate limiting is tracked per IP address using `x-forwarded-for` or `x-real-ip` headers
+- All data is sanitized and validated before database insertion
