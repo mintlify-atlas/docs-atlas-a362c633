@@ -1,0 +1,84 @@
+{
+  "projectType": "saas",
+  "projectName": "Polaris Clima",
+  "projectDescription": "Professional HVAC services platform for air conditioning installation, maintenance, and repair in Santiago, Chile.",
+  "theme": "almond",
+  "primaryColor": "#1d4ed8",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/services",
+              "features/contact-system",
+              "features/location-pages",
+              "features/seo-optimization"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/hero-section",
+              "components/service-cards",
+              "components/contact-form",
+              "components/testimonials",
+              "components/footer",
+              "components/whatsapp-button"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/setup",
+              "development/environment-variables",
+              "development/database-schema"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/contact"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Next.js 16 with App Router and React 19",
+    "MySQL database integration for contact management",
+    "SEO-optimized pages with structured data (LocalBusiness, Service schemas)",
+    "Rate-limited contact form API with validation",
+    "Responsive UI with Tailwind CSS and Framer Motion animations",
+    "WhatsApp integration for instant customer communication",
+    "Dynamic location-based service pages",
+    "Automated sitemap generation"
+  ],
+  "publicApiSurface": [
+    "POST /api/contacto - Submit contact form with rate limiting",
+    "useContactForm hook - Client-side form management with validation",
+    "HeroSection component - Main landing section",
+    "ServicesSection component - Service offerings display",
+    "ContactUs component - Contact form UI",
+    "TestimonialsSection component - Customer testimonials",
+    "LocalBusinessSchema component - Structured data for SEO",
+    "ServiceSchema component - Service structured data"
+  ]
+}
